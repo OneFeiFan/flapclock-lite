@@ -1,0 +1,20 @@
+# 构建上下文白名单：镜像里只要源码、shared 和前端产物。
+# 少了这份文件，Windows 上装出来的 node_modules（含平台相关二进制）和 .git
+# 都会被打进构建上下文：既慢，也可能让 Linux 上直接崩。
+
+.git/
+.gitattributes
+.gitignore
+.idea/
+node_modules/
+**/node_modules/
+web/dist/
+server/data/
+tv-android/
+docs/
+deploy/.ship/
+deploy/.stage/
+deploy/.env
+deploy/certs-local/
+*.log
+hs_err_pid*.log

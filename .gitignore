@@ -58,6 +58,11 @@ deploy/certs-local/
 deploy/.ship/
 deploy/.ship.tgz
 
+# 边缘 vhost 的临时暂存目录：deploy.mjs 在这里把模板里的占位域名替换成真实域名，
+# 再 scp 上去，然后删掉。**里面装着填好真实域名的配置文件**，
+# 万一部署中途失败没能删掉，绝不能让它进仓库。
+deploy/.stage/
+
 # 边缘网关临时修复目录（deploy.mjs --repair-edge 的工作目录）
 deploy/.repair/
 

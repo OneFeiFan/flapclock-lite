@@ -1,0 +1,61 @@
+# 翻牌钟简化版 · 容器编排
+#
+# 部署形态（和别的项目共用一台边缘网关服务器）：
+#   这台服务器的 80/443 由 poker-timer-web 容器独占（它是整台服务器唯一的边缘网关）。
+#   本服务不对外发布任何端口，而是接入对方的 docker 网络，让边缘按容器名反代到 18630。
+#   边缘侧的 vhost 由 deploy/deploy.mjs 装到宿主机的 /opt/edge/conf.d/，
+#   证书装到 /opt/edge/certs/，两边都是 poker-timer 那个容器以只读方式挂进去的。
+#
+# 好处：这台服务器上再加项目都不用抢 80/443，也不用改本文件。
+# 代价：本服务依赖 poker-timer 的 compose 项目网络存在（下面声明为 external）。
+#
+# 用法（在源码目录，即服务器上的 /opt/flapclock/src）：
+#   docker compose --env-file /opt/flapclock/.env build
+#   docker compose --env-file /opt/flapclock/.env up -d
+# 一般不用手敲，直接跑 deploy/deploy.mjs 即可。
+
+name: flapclock
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: flapclock-lite:${FLAPCLOCK_TAG:-local}
+    container_name: flapclock-app
+    restart: unless-stopped
+    environment:
+      # 容器内固定监听 18630；改端口只改 FLAPCLOCK_PORT 会和边缘 vhost 对不上，
+      # 真要改必须同时改 /opt/edge/conf.d 里的 proxy_pass
+      PORT: ${FLAPCLOCK_PORT:-18630}
+      HOST: 0.0.0.0
+      DATA_DIR: /data
+      TZ: ${TZ:-Asia/Shanghai}
+      # 只用于启动横幅：容器里 os.networkInterfaces() 看到的是容器内网地址，
+      # 印出来会误导运维，给了这个值就以真实对外地址为准
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
+    volumes:
+      # 赛事、屏幕、盲注方案全在这一个目录里，必须持久化
+      - ${FLAPCLOCK_DATA_DIR:-/opt/flapclock/data}:/data
+    healthcheck:
+      test: ["CMD", "node", "deploy/healthcheck.mjs"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    # 服务端退出时靠 SIGTERM 把内存里的改动写盘（写盘有 400ms 去抖），
+    # 被 SIGKILL 会丢这 400ms 的改动，所以要给够时间走完优雅退出
+    # （进程内部另有 1.5s 强制退出兜底，所以 15s 足够）
+    stop_grace_period: 15s
+    # 单实例：状态在这一个进程的内存里，多开会出现多份状态争抢同一批 JSON 文件
+    networks:
+      - edge
+
+networks:
+  # 只读接入 poker-timer 的 compose 网络（项目名 current → current_default），
+  # 对方容器因此能按名字 flapclock-app 访问本服务；改对方任何配置都不需要。
+  # 注意：docker compose 里 external 网络必须已存在，否则本服务起不来 ——
+  # 也就是本服务的启动前提是 poker-timer 已经部署过（deploy.mjs 会先检查并给出明确提示）。
+  edge:
+    name: ${EDGE_NETWORK:-current_default}
+    external: true

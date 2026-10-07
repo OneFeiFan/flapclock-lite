@@ -49,6 +49,7 @@ local.properties
 # 环境变量：真实值不提交，模板（.example）保留
 .env
 .env.*
+*.env
 !.env.example
 !*.env.example
 

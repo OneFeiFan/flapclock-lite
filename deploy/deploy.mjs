@@ -174,7 +174,12 @@ function packageAll() {
   }
   const tgz = path.join(__dirname, '.ship.tgz');
   fs.rmSync(tgz, { force: true });
-  runOrDie('tar', ['-czf', tgz, '-C', SHIP, '.']);
+  // 传相对路径 + 指定工作目录，不要传 tgz / SHIP 的绝对路径。
+  // 原因：Windows 的绝对路径形如 D:\...\deploy\.ship.tgz，里面的冒号会被 GNU tar
+  // （Git Bash 自带的 /usr/bin/tar）当成 host:path 的远程主机分隔符，报
+  // "Cannot connect to D: resolve failed" 后直接失败。
+  // 相对路径没有冒号，GNU tar 和 Windows 自带的 bsdtar 都能正常处理。
+  runOrDie('tar', ['-czf', path.basename(tgz), '-C', path.basename(SHIP), '.'], { cwd: __dirname });
   const kb = (fs.statSync(tgz).size / 1024).toFixed(0);
   console.log('  ✓ deploy/.ship.tgz（' + kb + ' KB）');
   return tgz;

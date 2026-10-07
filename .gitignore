@@ -36,6 +36,22 @@ server/data/
 *.sqlite
 *.sqlite3
 
+# ---------- 部署目录里的私有部分 ----------
+
+# 证书与私钥。注意：证书颁发机构给的 nginx 压缩包里**也含私钥**，
+# 所以整个目录都要挡，不能只挡 *.key / *.pem。
+# 上传 = 任何人都能冒充你的域名做中间人攻击，且 git 历史删不掉。
+deploy/ssl/
+deploy/certs-local/
+**/certs-local/
+
+# 部署打包产物（内容与源码重复，只是打了包）
+deploy/.ship/
+deploy/.ship.tgz
+
+# 边缘网关临时修复目录（含 poker-timer 项目的基础设施配置）
+deploy/.repair/
+
 # ---------- 密钥与私有配置（最重要，切勿提交）----------
 # 安卓签名：提交了等于把 APK 的签名身份送人
 *.jks

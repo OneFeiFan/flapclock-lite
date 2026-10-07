@@ -1,0 +1,20 @@
+{
+  "name": "flapclock-lite-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "翻牌钟服务端：权威时钟、对时、命令处理与消息排期",
+  "main": "index.js",
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test/engine.test.js && node test/backend.test.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode-generator": "^1.4.4",
+    "ws": "^8.17.1"
+  }
+}

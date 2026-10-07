@@ -1,0 +1,2 @@
+<!-- 局域网测试版：允许 http（连接电脑上 npm run lan 启动的服务）；地址白名单仍由 OriginPolicy 保证 -->
+<network-security-config><base-config cleartextTrafficPermitted="true"><trust-anchors><certificates src="system" /></trust-anchors></base-config></network-security-config>

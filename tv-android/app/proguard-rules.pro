@@ -1,0 +1,1 @@
+-keepclassmembers class com.tablejoker.flapclock.tv.TvJavascriptBridge { @android.webkit.JavascriptInterface <methods>; }

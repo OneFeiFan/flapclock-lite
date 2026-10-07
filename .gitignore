@@ -1,0 +1,90 @@
+# ============================================================
+# 翻牌钟简化版（flapclock-lite）· 忽略规则
+# 原则：只提交"人写的源码和文档"，不提交"机器生成的产物"和"含有你私有信息的文件"
+# ============================================================
+
+# ---------- 依赖 ----------
+node_modules/
+.pnpm-store/
+
+# ---------- 本机工具索引 ----------
+# CodeGraph 是每台机器各建各的代码索引，数据库很大且因人而异
+.codegraph/
+
+# ---------- 构建产物 ----------
+# 网页构建输出：拉下代码后跑 npm run build 自己生成
+web/dist/
+dist/
+build/
+
+# 安卓构建输出（Gradle 生成，体积大且每次构建都变）
+tv-android/.gradle/
+tv-android/build/
+tv-android/app/build/
+tv-android/app/release/
+tv-android/app/debug/
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+
+# ---------- 运行时的数据 ----------
+# 赛事、屏幕、盲注方案的 JSON，跑起来才产生，属于你自己的业务数据
+server/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ---------- 密钥与私有配置（最重要，切勿提交）----------
+# 安卓签名：提交了等于把 APK 的签名身份送人
+*.jks
+*.keystore
+*.p12
+*.pfx
+tv-android/keystore.properties
+tv-android/local.properties
+local.properties
+
+# 环境变量：真实值不提交，模板（.example）保留
+.env
+.env.*
+!.env.example
+!*.env.example
+
+# 任何位置的私钥
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+.ssh/
+
+# ---------- 日志与临时文件 ----------
+*.log
+logs/
+npm-debug.log*
+yarn-error.log*
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*~
+
+# ---------- 编辑器与系统 ----------
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.iml
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 测试与覆盖率 ----------
+coverage/
+.nyc_output/
+*.lcov

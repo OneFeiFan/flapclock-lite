@@ -1,0 +1,9 @@
+/* 设计变量：编译期 SCSS 变量（不用 CSS 自定义属性，兼容老电视浏览器） */
+$black: #050505; $flap: #1B1B1B; $flap-lo: #161616; $rule: #262626; $pin: #5A5A58;
+$white: #F2F2EE; $print: #8F8F8A;
+$go: #3FCF84; $warn: #FFC53A; $stop: #FF5646;
+/* 控制台（浅色办公界面） */
+$desk: #E7E7E3; $paper: #FFFFFF; $ink: #141414; $ink2: #5B5B55; $line: #D5D5CF; $line2: #ECECE8;
+$hei: "FlapHei", "Source Han Sans SC", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+$num: "FlapNum", "FlapHei", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+$ui: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;

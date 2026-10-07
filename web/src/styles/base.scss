@@ -1,0 +1,30 @@
+@font-face { font-family: "FlapNum"; font-weight: 700; font-display: block; src: url("/fonts/flapnum-700.woff2") format("woff2"); }
+@font-face { font-family: "FlapNum"; font-weight: 800; font-display: block; src: url("/fonts/flapnum-800.woff2") format("woff2"); }
+@font-face { font-family: "FlapHei"; font-weight: 900; font-display: block; src: url("/fonts/flaphei.woff2") format("woff2"); }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: $ui; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
+button, input, select, textarea { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid $warn; outline-offset: 2px; }
+
+/* ---------- 翻片模块（所有主题共用的机械结构） ---------- */
+.flap { position: relative; display: inline-block; vertical-align: middle; -webkit-flex: none; flex: none;
+  box-shadow: 0 2px 0 #202020, 0 4px 0 #0A0A0A, 0 5px 0 #1C1C1C; }
+.flap .win { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; }
+.flap .h, .flap .l { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.flap .t, .flap .lt { top: 0; background: $flap; }
+.flap .b, .flap .lb { bottom: 0; background: $flap-lo; }
+.flap b { display: block; height: 200%; text-align: center; color: $white; font-family: $num; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; transition: color .4s; }
+.flap b .k { font-family: $hei; font-weight: 900; font-size: .66em; }
+.flap .b b, .flap .lb b { transform: translateY(-50%); }
+.flap .l { visibility: hidden; z-index: 3; }
+.flap .lt { transform-origin: 50% 100%; }
+.flap .lb { transform-origin: 50% 0; transform: rotateX(90deg); }
+.flap .sh { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: #000; opacity: 0; pointer-events: none; }
+.flap .sh-grad { background: linear-gradient(#000, rgba(0, 0, 0, 0) 85%); }
+.flap .hinge { position: absolute; left: 0; right: 0; background: #000; z-index: 5; }
+.flap .pin { position: absolute; z-index: 6; border-radius: 50%; background: $pin; }
+@keyframes flapRebound { 0% { transform: rotateX(0deg); } 36% { transform: rotateX(8deg); } 68% { transform: rotateX(0deg); } 84% { transform: rotateX(2.5deg); } 100% { transform: rotateX(0deg); } }
+
+@media (prefers-reduced-motion: reduce) { .flap b { transition: none; } }

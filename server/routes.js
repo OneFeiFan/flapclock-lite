@@ -56,7 +56,15 @@ export function registerRoutes(app, ctx) {
     res.json(t.adminView());
   }));
   app.get('/api/tournaments/:id', client, wrap(function (req, res) { res.json(find(req.params.id).adminView()); }));
-  app.delete('/api/tournaments/:id', client, wrap(function (req, res) { var t = find(req.params.id); hub.forgetTournament(t.id); store.removeTournament(t.id); listChanged(); res.json({ ok: true }); }));
+  /** 删除赛事：绑定的屏幕改为显示 moveTo 指定的赛事；不指定时回到配对页 */
+  app.delete('/api/tournaments/:id', client, wrap(function (req, res) {
+    var t = find(req.params.id), target = req.query.moveTo ? find(String(req.query.moveTo)) : null, moved = 0;
+    if (target && target.id !== t.id) {
+      hub.displayList().forEach(function (d) { if (d.tid === t.id) { hub.updateDisplay(d.id, { tid: target.id }); moved++; } });
+    }
+    hub.forgetTournament(t.id); store.removeTournament(t.id); listChanged(); schemesChanged();
+    res.json({ ok: true, moved: moved });
+  }));
   app.put('/api/tournaments/:id/settings', client, wrap(function (req, res) { var t = find(req.params.id); t.updateSettings(req.body, req.who); listChanged(); res.json(t.adminView()); }));
   app.put('/api/tournaments/:id/structure', client, wrap(function (req, res) {
     var t = find(req.params.id), b = req.body || {};

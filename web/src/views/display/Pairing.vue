@@ -1,14 +1,14 @@
 <template>
   <div class="pairing">
     <div class="pr-title">配对这块屏幕</div>
-    <div class="pr-sub">在控制台输入下面的配对码，选好赛事，这块屏幕就会开始显示</div>
+    <div class="pr-sub">用手机扫右下角的二维码，选好比赛，这块屏幕就会开始显示</div>
     <div class="pr-code">
       <flap-tile v-for="(ch, i) in chars" :key="i" :class="{ 'ml': i > 0, 'ml-wide': i === 3 }" :value="ch" :w="150" :h="224" :fs="236" :r="4" :hg="5" :pin="10" />
     </div>
     <div class="pr-foot">
       <div class="pr-steps">
-        <p><b>在电脑上</b>打开控制台，进入“屏幕”，输入配对码</p>
-        <p><b>或用手机</b>扫右边的二维码，直接进入配对</p>
+        <p><b>用手机相机</b>扫右边的二维码，在打开的页面里点“绑定”</p>
+        <p><b>或在手机遥控页</b>首页的“屏幕”里找到这块屏幕，点“绑定”</p>
         <p class="pr-dev">本机编号 {{ deviceLabel }}</p>
       </div>
       <qr-code class="pr-qr" :text="pairUrl" :size="220" dark="#050505" light="#F2F2EE" />

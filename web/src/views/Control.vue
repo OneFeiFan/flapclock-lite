@@ -78,6 +78,22 @@
             <button class="rm-btn is-danger" @click="askEnd">结束比赛</button>
             <button class="rm-btn" @click="askReset">重置时钟</button>
           </div>
+          <button class="rm-btn is-danger is-wide" @click="askDeleteMatch">删除这场比赛</button>
+        </template>
+        <template v-else-if="sheet === 'delete'">
+          <h3>删除「{{ settings.name }}」？</h3>
+          <p>比赛的设置、盲注结构和操作日志都会删除，不能恢复。盲注方案不受影响。</p>
+          <template v-if="boundScreens.length">
+            <label class="f">正在显示这场比赛的 {{ boundScreens.length }} 块屏幕（{{ boundScreens.map(function (d) { return d.name || '未命名'; }).join('、') }}）改为：</label>
+            <select v-model="moveTo">
+              <option v-for="t in otherMatches" :key="t.id" :value="t.id">显示「{{ t.name }}」</option>
+              <option value="">回到配对页（之后用手机重新绑定）</option>
+            </select>
+          </template>
+          <div class="rm-acts">
+            <button class="rm-btn" @click="sheet = ''">取消</button>
+            <button class="rm-btn is-danger" :disabled="deleting" @click="deleteMatch">删除</button>
+          </div>
         </template>
         <template v-else-if="sheet === 'confirm'">
           <h3>{{ confirm.title }}</h3>
@@ -124,7 +140,7 @@ export default {
       view: { level: '', word: '', tone: 'white', time: '--:--', blinds: '', ante: '', next: '', dim: false, over: false,
         status: 'pristine', levelMs: 0, remainMs: 0, canPrev: false, canNext: false, li: 0 },
       infoDraft: '', infoBase: '', loopDraft: '', loopBase: '', loopOn: false, loopOnBase: false, noticeText: '', saving: false,
-      schemes: [], log: [], sheet: '', confirm: {}, toast: null, editing: null,
+      schemes: [], log: [], sheet: '', confirm: {}, toast: null, editing: null, displays: [], otherMatches: [], moveTo: '', deleting: false,
       presets: ['请大家保持安静', '请裁判到场', '比赛即将开始，请回到座位', '休息即将结束，请回到座位', '请勿在比赛区域使用手机']
     };
   },
@@ -138,6 +154,7 @@ export default {
     },
     infoDirty: function () { return this.infoDraft !== this.infoBase; },
     loopDirty: function () { return this.loopDraft !== this.loopBase || this.loopOn !== this.loopOnBase; },
+    boundScreens: function () { var tid = this.tid; return this.displays.filter(function (d) { return d.tid === tid; }); },
     jumpRows: function () {
       var cur = this.view.li;
       return this.structure.levels.map(function (e, i) {
@@ -159,6 +176,7 @@ export default {
     onMessage: function (m) {
       if (m.t === 'gone') { this.fatal = '这场比赛不存在或已被删除'; return; }
       if (m.t === 'schemes') { this.loadSchemes(); return; }
+      if (m.t === 'presence') { this.displays = m.displays || []; return; }
       if (m.t === 'snap' && m.tid === this.tid) {
         if (!this.clock.set(m)) return;
         var first = !this.ready;
@@ -227,7 +245,28 @@ export default {
     ask: function (title, text, ok, danger, run) { this.confirm = { title: title, text: text, ok: ok, danger: danger, run: run }; this.sheet = 'confirm'; },
     runConfirm: function () { var run = this.confirm.run; this.sheet = ''; if (run) run(); },
     askJump: function (r) { var self = this; this.ask('跳到这一项？', r.label + '。本级时间会从头开始。', '跳转', false, function () { self.send('jump', { index: r.i }); }); },
-    askEnd: function () { var self = this; this.ask('结束比赛？', '大屏会显示“比赛结束”，可以用“重置时钟”重新开始。', '结束比赛', true, function () { self.send('end'); }); },
+    askEnd: function () { var self = this; this.ask('结束比赛？', '大屏会显示“比赛结束”，倒计时停在这一刻。之后可以“重置时钟”重新开始，或者在“更多操作”里删除这场比赛。', '结束比赛', true, function () { self.send('end'); }); },
+    /** 删除比赛：绑定的屏幕默认改为显示另一场比赛（最常见：这场打完，屏幕接着显示下一场），也可以回到配对页 */
+    askDeleteMatch: function () {
+      var self = this, tid = this.tid;
+      api.get('/api/tournaments').then(function (list) {
+        self.otherMatches = list.filter(function (t) { return t.id !== tid; });
+        self.moveTo = self.otherMatches.length ? self.otherMatches[0].id : '';
+        self.sheet = 'delete';
+      }).catch(function (e) { self.showToast(e.message, 'warn'); });
+    },
+    deleteMatch: function () {
+      var self = this, n = this.boundScreens.length; this.deleting = true;
+      api.del('/api/tournaments/' + this.tid + (n && this.moveTo ? '?moveTo=' + encodeURIComponent(this.moveTo) : ''))
+        .then(function (r) {
+          var moved = r && r.moved ? '，' + r.moved + ' 块屏幕已改为显示另一场比赛' : (n ? '，屏幕已回到配对页' : '');
+          self.sheet = ''; self.link.close();
+          // 提示放在地址参数里带回首页（首页按需加载，直接发事件可能没人接收）
+          self.$router.replace({ path: '/', query: { msg: '比赛已删除' + moved } });
+        })
+        .catch(function (e) { self.showToast(e.message, 'warn'); })
+        .then(function () { self.deleting = false; });
+    },
     askReset: function () { var self = this; this.ask('重置时钟？', '回到第 1 级、未开始的状态。操作日志会保留。', '重置', true, function () { self.send('reset'); }); },
     askApply: function (s) {
       var self = this, running = this.view.status === 'running' || this.view.status === 'paused';

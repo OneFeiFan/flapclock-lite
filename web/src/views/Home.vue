@@ -158,8 +158,10 @@ export default {
     this.connect();
     Promise.all([this.loadTournaments(), this.loadSchemes(), api.get('/api/displays').then(function (l) { self.displays = l; })]).then(function () {
       self.loaded = true;
-      var code = String(self.$route.query.pair || '');
-      if (code) { self.$router.replace({ path: '/' }); self.openPair(code); }
+      var code = String(self.$route.query.pair || ''), msg = String(self.$route.query.msg || '');
+      if (code || msg) self.$router.replace({ path: '/' });
+      if (msg) self.showToast(msg, 'go');      // 例如从比赛页删除比赛后带回的结果
+      if (code) self.openPair(code);
     }).catch(function (e) { self.loaded = true; self.showToast(e.message, 'warn'); });
   },
   beforeDestroy: function () { this.link.close(); clearTimeout(this.toastTimer); },

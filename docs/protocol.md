@@ -111,7 +111,7 @@
 | `GET /api/tournaments` | 赛事列表，每项带 `screens`（绑定的屏幕数） |
 | `POST /api/tournaments` `{ name, club?, schemeId? }` | 新建赛事；不指定方案时使用第一套；方案库为空时返回 `invalid`（请先创建一套盲注方案） |
 | `GET /api/tournaments/:id` | 赛事详情，带 `locked` |
-| `DELETE /api/tournaments/:id` | 删除赛事；绑定的屏幕回到配对页 |
+| `DELETE /api/tournaments/:id?moveTo=赛事ID` | 删除赛事。绑定的屏幕改为显示 `moveTo` 指定的赛事；不带 `moveTo` 时回到配对页。返回 `{ ok, moved }` |
 | `PUT /api/tournaments/:id/settings` | 修改设置（只传要改的字段） |
 | `PUT /api/tournaments/:id/structure` `{ levels, endMode, baseVersion }` | 直接修改这场比赛的结构，同样受锁定规则约束 |
 | `POST /api/tournaments/:id/scheme` `{ schemeId }` | 把方案用到这场比赛上 |

@@ -1,6 +1,6 @@
 /*
  * 实时通道 /ws：
- *  - 大屏（role: display）：按设备编号连接，不需要登录；未绑定时拿到 6 位配对码，绑定后进入对应赛事的房间。
+ *  - 大屏（role: display）：按设备编号连接，不需要登录；没有指定比赛时显示待机页（扫码打开遥控页），由手机为它选择比赛。
  *  - 管理（role: admin）：手机连接（暂时不需要登录，name 为手机名称），收到在线屏幕列表；watch 某场赛事后收到它的实时快照，并可下发命令。
  * 消息：
  *   客户端 → ping {c0} / hello {role, deviceId | name, tid?} / watch {tid} / cmd {tid, cmd}
@@ -17,7 +17,6 @@ export class Hub {
     this.rooms = new Map();          // tid -> Set<ws>（大屏和正在查看该赛事的手机）
     this.admins = new Set();
     this.displaySockets = new Map(); // deviceId -> ws
-    this.codes = new Map();          // 配对码 -> deviceId
     this.wss = new WebSocketServer({ server: opts.server, path: '/ws', maxPayload: 64 * 1024 });
     this.wss.on('connection', (ws) => this.onConnection(ws));
     // WebSocketServer 会转发 HTTP 服务的错误（如端口被占用）；交给 index.js 统一处理，这里不再抛出
@@ -58,7 +57,6 @@ export class Hub {
     this.leave(ws); this.admins.delete(ws);
     if (ws.meta.role === 'display' && this.displaySockets.get(ws.meta.deviceId) === ws) {
       this.displaySockets.delete(ws.meta.deviceId);
-      if (ws.meta.code) this.codes.delete(ws.meta.code);
       this.presence();
     }
   }
@@ -95,18 +93,11 @@ export class Hub {
       send(ws, { t: 'display', name: d.name });
       send(ws, t.snapshot()); send(ws, { t: 'msgs', list: t.activeMessages(Date.now()) });
     } else {
-      var code = this.issueCode(id); ws.meta.code = code;
-      send(ws, { t: 'hello', serverMs: Date.now(), paired: false, code: code });
+      send(ws, { t: 'hello', serverMs: Date.now(), paired: false });   // 待机：等手机为它选择比赛
     }
     this.presence();
   }
-  issueCode(id) {
-    for (var [c, dev] of this.codes) if (dev === id) return c;
-    var code;
-    do { code = String(crypto.randomInt(100000, 1000000)); } while (this.codes.has(code));
-    this.codes.set(code, id);
-    return code;
-  }
+
 
   command(ws, m) {
     var t = this.store.tournaments.get(String(m.tid || ''));
@@ -130,32 +121,29 @@ export class Hub {
   notifyAdmins(obj) { var data = JSON.stringify(obj); this.admins.forEach((ws) => { if (ws.readyState === 1) ws.send(data); }); }
 
   displayList() {
-    var codes = {}; this.codes.forEach((dev, c) => { codes[dev] = c; });
     return Array.from(this.store.displays.values()).map((d) => ({ id: d.id, name: d.name, label: d.label || '', tid: d.tid,
-      online: this.displaySockets.has(d.id), code: codes[d.id] || null, createdAt: d.createdAt }))
+      online: this.displaySockets.has(d.id), createdAt: d.createdAt }))
       .filter((d) => d.tid || d.online)
       .sort((a, b) => b.createdAt - a.createdAt);
   }
   presence() { this.notifyAdmins({ t: 'presence', displays: this.displayList() }); }
 
-  pair(code, tid, name) {
-    var dev = this.codes.get(String(code || '').trim());
-    if (!dev) throw new Error('配对码不存在或已过期，请看电视上最新的配对码');
-    var t = this.store.tournaments.get(tid); if (!t) throw new Error('赛事不存在');
-    var d = this.store.displays.get(dev);
-    d.tid = t.id; d.name = String(name || '').trim().slice(0, 16) || d.name || ('屏幕 ' + String(code).slice(-3));
-    this.codes.delete(String(code)); this.store.saveDisplays();
-    var ws = this.displaySockets.get(dev);
-    if (ws) { ws.meta.code = null; this.join(ws, t.id); send(ws, { t: 'paired', tid: t.id }); send(ws, { t: 'display', name: d.name }); send(ws, t.snapshot()); send(ws, { t: 'msgs', list: t.activeMessages(Date.now()) }); }
-    this.presence();
-    return d;
-  }
+
+  /** 修改屏幕：改名；tid 为某场比赛时让它显示这场比赛，为 null 时停止显示（回到待机页） */
   updateDisplay(id, patch) {
     var d = this.store.displays.get(id); if (!d) throw new Error('屏幕不存在');
     if ('name' in patch) d.name = String(patch.name || '').trim().slice(0, 16);
-    if ('tid' in patch && patch.tid !== d.tid) {
-      var t = this.store.tournaments.get(patch.tid); if (!t) throw new Error('赛事不存在');
-      d.tid = t.id; var ws0 = this.displaySockets.get(d.id); if (ws0) { this.join(ws0, t.id); send(ws0, t.snapshot()); send(ws0, { t: 'msgs', list: t.activeMessages(Date.now()) }); }
+    if ('tid' in patch && patch.tid === null && d.tid) { this.store.saveDisplays(); this.unpair(id); return d; }
+    if ('tid' in patch && patch.tid && patch.tid !== d.tid) {
+      var t = this.store.tournaments.get(patch.tid); if (!t) throw new Error('比赛不存在');
+      var wasIdle = !d.tid;
+      d.tid = t.id;
+      var ws0 = this.displaySockets.get(d.id);
+      if (ws0) {
+        this.join(ws0, t.id);
+        if (wasIdle) send(ws0, { t: 'paired', tid: t.id });
+        send(ws0, { t: 'display', name: d.name }); send(ws0, t.snapshot()); send(ws0, { t: 'msgs', list: t.activeMessages(Date.now()) });
+      }
     }
     this.store.saveDisplays();
     var ws = this.displaySockets.get(d.id); if (ws) send(ws, { t: 'display', name: d.name });
@@ -165,13 +153,13 @@ export class Hub {
   identify(id) {
     var d = this.store.displays.get(id); if (!d) throw new Error('屏幕不存在');
     var ws = this.displaySockets.get(id); if (!ws) throw new Error('这块屏幕不在线');
-    send(ws, { t: 'identify', name: d.name || '未命名屏幕' });
+    send(ws, { t: 'identify', name: d.name || '未命名屏幕', label: d.label || '' });
   }
   unpair(id) {
     var d = this.store.displays.get(id); if (!d) throw new Error('屏幕不存在');
     d.tid = null; this.store.saveDisplays();
     var ws = this.displaySockets.get(id);
-    if (ws) { this.leave(ws); var code = this.issueCode(id); ws.meta.code = code; send(ws, { t: 'unpaired', code: code }); }
+    if (ws) { this.leave(ws); send(ws, { t: 'unpaired' }); }
     else this.store.displays.delete(id);
     this.presence();
   }

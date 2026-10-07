@@ -27,11 +27,16 @@ test('开始后按时间自动升级，并跨过休息', function () {
   now += 20 * 60000; assert.strictEqual(cur(t).li, 2);                 // 进入休息
   assert.ok(C.describe(t.state, t.structure, cur(t), now, t.settings).brk);
 });
-test('最后一级结束后：overtime 正计时，stop 停在 0', function () {
-  var t = make([{ type: 'level', sb: 1, bb: 2, minutes: 1 }]); cmd(t, 'start');
-  now += 90000; var c = cur(t); assert.ok(c.rem < 0);
-  assert.strictEqual(C.describe(t.state, t.structure, c, now, t.settings).kind, 'over');
-  t.structure.endMode = 'stop'; assert.strictEqual(cur(t).rem, 0);
+test('最后一级走完即比赛结束：剩余停在 0、状态为“比赛结束”，不再有超时正计时', function () {
+  var t = make(); cmd(t, 'start');
+  var L = t.structure.levels, total = L.reduce(function (n, e) { return n + C.entryMs(e); }, 0);
+  assert.strictEqual(C.endsAt(t.state, t.structure), T0 + total);
+  now = T0 + total - 1000; var c = cur(t);
+  assert.strictEqual(c.li, L.length - 1); assert.strictEqual(c.ended, false);
+  now = T0 + total + 5 * 60000; c = cur(t);
+  assert.strictEqual(c.rem, 0); assert.strictEqual(c.ended, true);
+  var d = C.describe(t.state, t.structure, c);
+  assert.strictEqual(d.kind, 'finished'); assert.strictEqual(C.STATE_WORD[d.kind], '比赛结束'); assert.strictEqual(d.secs, 0);
 });
 test('暂停不需要单独记账，恢复后继续从暂停时刻的剩余时间走', function () {
   var t = make(); cmd(t, 'start'); now += 5 * 60000; cmd(t, 'pause');

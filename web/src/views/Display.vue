@@ -2,7 +2,7 @@
   <div class="display" @click="unlock">
     <div class="dp-screen" :style="screenStyle">
       <div class="dp-shift" :style="shiftStyle">
-        <pairing v-if="phase === 'pair'" :code="code" :device-label="deviceLabel" />
+        <pairing v-if="phase === 'pair'" :device-id="deviceId" :device-label="deviceLabel" />
         <component :is="themeComp" v-else-if="phase === 'board'" :clock="clock" :messages="messages" :settings="settings" />
         <div v-else-if="phase === 'replaced'" class="dp-cover">
           <div class="t">这块屏幕已在另一个窗口打开</div>
@@ -41,7 +41,7 @@ export default {
   name: 'DisplayView',
   components: { Pairing: Pairing },
   data: function () {
-    return { phase: 'boot', code: '', settings: {}, linkStatus: 'connecting', scale: 1, ox: 0, oy: 0, shiftN: 0, hint: '',
+    return { phase: 'boot', settings: {}, linkStatus: 'connecting', scale: 1, ox: 0, oy: 0, shiftN: 0, hint: '',
       messages: new MessageStore(), deviceId: '', deviceLabel: '', ident: '' };
   },
   computed: {
@@ -96,9 +96,9 @@ export default {
     },
     takeOver: function () { this.phase = 'boot'; this.connect(); },
     onMessage: function (m) {
-      if (m.t === 'hello') { if (m.paired === false) { this.phase = 'pair'; this.code = m.code; } }
+      if (m.t === 'hello') { if (m.paired === false) this.phase = 'pair'; }   // 待机：等手机为它选择比赛
       else if (m.t === 'replaced') { this.link.close(); this.phase = 'replaced'; this.clock.snap = null; this.messages.clear(); this.alerts.reset(); }
-      else if (m.t === 'paired') { this.code = ''; }
+      else if (m.t === 'paired') { /* 已选择比赛，随后的快照会切到计时画面 */ }
       else if (m.t === 'identify') { var self = this; this.ident = m.name; clearTimeout(this.identTimer); this.identTimer = setTimeout(function () { self.ident = ''; }, 6000); }
       else if (m.t === 'snap') {
         if (this.clock.snap && this.clock.snap.tid !== m.tid) { this.messages.clear(); this.alerts.reset(); }
@@ -107,7 +107,7 @@ export default {
       else if (m.t === 'msg') this.messages.add(m.m);
       else if (m.t === 'msgs') { var ms = this.messages; (m.list || []).forEach(function (x) { ms.add(x); }); }
       else if (m.t === 'retract') this.messages.retract(m.id);
-      else if (m.t === 'unpaired') { this.phase = 'pair'; this.code = m.code; this.clock.snap = null; this.messages.clear(); this.alerts.reset(); }
+      else if (m.t === 'unpaired') { this.phase = 'pair'; this.clock.snap = null; this.messages.clear(); this.alerts.reset(); }
     },
     checkAlerts: function () {
       if (this.phase !== 'board') return;

@@ -52,6 +52,7 @@ function sanitizePayload(type, p) {
     case 'setRemaining': return { ms: num(p.ms, 1000, C.MAX_REMAIN, 60000) };
     case 'jump': return { index: num(p.index, 0, 1000, 0), remainingMs: p.remainingMs ? num(p.remainingMs, 1000, C.MAX_REMAIN, 0) : 0 };
     case 'notice': return { text: str(p.text, 40) };
+    case 'end': return {};
     default: return {};
   }
 }
@@ -214,6 +215,15 @@ export class Tournament {
     this.changed();
   }
 
+  /** 最后一级走完：在结束那一刻自动记一条“结束比赛”（操作人“系统”），服务重启后状态也不丢 */
+  autoEnd(at) {
+    var e = { seq: this.seq + 1, opId: 'auto-end-' + rid(8), type: 'end', payload: { auto: true }, at: at, issuer: '系统' };
+    this.seq = e.seq;
+    this.log.push(e); this.seen.add(e.opId);
+    this.state = C.replay(this.checkpoint, this.log, this.structure);
+    this.changed();
+  }
+
   /* ── 走字带：一次性公告排队依次播放；空闲时循环播放常驻文字 ──
    * 每段内容由服务端定好开始时刻（startAt），各屏按同步后的时钟计算位置，所以多块屏同步滚动。 */
   enqueue(m) {
@@ -239,6 +249,8 @@ export class Tournament {
   }
   /** 每 100ms 调用：升级后留 3 秒安静，每级最后 10 秒不放新内容；先放排队的公告，没有公告时放循环文字 */
   pump(now) {
+    var end = C.endsAt(this.state, this.structure);
+    if (end !== null && now >= end) this.autoEnd(end);
     var c = C.advance(this.state, this.structure, now), e = this.structure.levels[c.li];
     if (this.lastLi !== undefined && c.li !== this.lastLi) this.quietUntil = now + 3000;
     this.lastLi = c.li;

@@ -53,6 +53,19 @@ test('走字带：公告优先；空闲时循环播放常驻文字；改了循�
   assert.strictEqual(shown().length, n);                                // 第 1 级最后 10 秒被挡住
   assert.strictEqual(t.recentLog(5).filter(function (e) { return e.type === 'notice'; })[0].label, '公告：3 号桌请裁判到场');
 });
+test('到点自动结束：在结束那一刻记一条“比赛结束（自动）”，操作人“系统”，重启后仍是已结束', function () {
+  var store = fakeStore(), t = make(store); cmd(t, 'start');
+  var total = t.structure.levels.reduce(function (n, e) { return n + C.entryMs(e); }, 0);
+  now = T0 + total - 200; t.pump(now); assert.strictEqual(t.state.status, 'running');
+  now = T0 + total + 3000; t.pump(now);
+  var last = t.log[t.log.length - 1];
+  assert.strictEqual(t.state.status, 'finished');
+  assert.deepStrictEqual([last.type, last.at, last.issuer, C.cmdLabel(last)], ['end', T0 + total, '系统', '比赛结束（自动）']);
+  var again = new Tournament(JSON.parse(JSON.stringify(t.toJSON())), store);
+  assert.strictEqual(again.state.status, 'finished');
+  t.pump(now + 1000); assert.strictEqual(t.log.filter(function (e) { return e.type === 'end'; }).length, 1);   // 只记一次
+});
+
 test('结构校验：至少一个盲注级别、最多 50 行、截止买入休息最多一个', function () {
   assert.ok(S.structureError([]));
   assert.ok(S.structureError([{ type: 'break', minutes: 10 }]));

@@ -52,13 +52,22 @@ export function initialState(structure, at) {
 }
 
 /* 锚点推算：给定服务器时刻，算出当前级别下标与本级剩余毫秒（PRD 5.3） */
+/** 当前级与剩余时间。最后一级走完即比赛结束：剩余停在 0，ended 为 true（不再有超时正计时） */
 export function advance(state, structure, at) {
   var L = structure.levels, last = L.length - 1;
-  if (state.status !== 'running' || last < 0) return { li: state.levelIndex, rem: state.remainingAtAnchorMs };
+  if (state.status !== 'running' || last < 0) return { li: state.levelIndex, rem: state.remainingAtAnchorMs, ended: false };
   var li = state.levelIndex, rem = state.remainingAtAnchorMs - (at - state.anchorServerMs);
   while (rem <= 0 && li < last) { li++; rem += entryMs(L[li]); }
-  if (rem < 0 && li === last && structure.endMode === 'stop') rem = 0;
-  return { li: li, rem: rem };
+  if (rem < 0) rem = 0;
+  return { li: li, rem: rem, ended: li === last && rem <= 0 };
+}
+
+/** 进行中的比赛预计在哪一刻结束（服务器时间）；不在进行中返回 null */
+export function endsAt(state, structure) {
+  if (state.status !== 'running' || !structure.levels.length) return null;
+  var t = state.anchorServerMs + state.remainingAtAnchorMs;
+  for (var i = state.levelIndex + 1; i < structure.levels.length; i++) t += entryMs(structure.levels[i]);
+  return t;
 }
 
 /* 命令权限：director 仅总监；referee 裁判与总监都可 */
@@ -113,28 +122,23 @@ export function replay(checkpoint, log, structure) {
 
 export function nextLevelAfter(levels, li) { for (var i = li + 1; i < levels.length; i++) if (levels[i].type === 'level') return levels[i]; return null; }
 
-export var STATE_WORD = { run: '进行中', last: '最后一分钟', pause: '暂停', break: '休息中', regEnd: '截止买入', over: '超时',
-  stopped: '结构已结束', idle: '未开始', finished: '比赛结束' };
-export var STATE_TONE = { run: 'go', last: 'warn', pause: 'stop', break: 'warn', regEnd: 'warn', over: 'stop',
-  stopped: 'stop', idle: 'white', finished: 'white' };
+export var STATE_WORD = { run: '进行中', last: '最后一分钟', pause: '暂停', break: '休息中', regEnd: '截止买入', idle: '未开始', finished: '比赛结束' };
+export var STATE_TONE = { run: 'go', last: 'warn', pause: 'stop', break: 'warn', regEnd: 'warn', idle: 'white', finished: 'white' };
 
 /* 把时钟状态翻译成“屏幕上该显示什么” */
 export function describe(s, structure, c) {
-  var L = structure.levels, e = L[c.li] || null, brk = !!e && e.type === 'break', lastIdx = L.length - 1;
-  var over = s.status === 'running' && c.li === lastIdx && c.rem < 0;
-  var stopped = s.status === 'running' && c.li === lastIdx && c.rem === 0 && structure.endMode === 'stop';
-  var secs = over ? Math.floor(-c.rem / 1000) : Math.max(0, Math.ceil(c.rem / 1000));
+  var L = structure.levels, e = L[c.li] || null, brk = !!e && e.type === 'break';
+  var ended = s.status === 'finished' || (s.status === 'running' && c.ended);
+  var secs = Math.max(0, Math.ceil(c.rem / 1000));
   var kind;
-  if (s.status === 'finished') kind = 'finished';
-  else if (over) kind = 'over';
-  else if (stopped) kind = 'stopped';
+  if (ended) kind = 'finished';
   else if (s.status === 'paused') kind = 'pause';
   else if (s.status === 'pristine') kind = 'idle';
   else if (brk) kind = e.regEnd ? 'regEnd' : 'break';
   else if (secs <= 60) kind = 'last';
   else kind = 'run';
-  return { e: e, brk: brk, over: over, secs: secs, kind: kind, blinds: brk ? nextLevelAfter(L, c.li) : e,
-    dim: s.status === 'paused' || s.status === 'finished' };
+  return { e: e, brk: brk, over: false, ended: ended, secs: secs, kind: kind, blinds: brk ? nextLevelAfter(L, c.li) : e,
+    dim: s.status === 'paused' || ended };
 }
 
 /* 时钟数字：不足 100 分钟显示 分:秒，否则显示 时:分 */
@@ -197,6 +201,7 @@ export function cmdLabel(e) {
     case 'jump': return '跳到第 ' + ((p.index | 0) + 1) + ' 项';
     case 'setRemaining': return '设定剩余 ' + mmss(Math.round((p.ms | 0) / 1000));
     case 'notice': return '公告：' + String(p.text || '').slice(0, 12);
+    case 'end': return p.auto ? '比赛结束（自动）' : '结束比赛';
     case 'structure': return p.scheme ? (p.apply ? '使用方案：' : '方案已更新：') + p.scheme : '修改盲注结构';
     case 'settings': return p.what || '修改设置';
     default: return CMD_LABEL[e.type] || e.type;

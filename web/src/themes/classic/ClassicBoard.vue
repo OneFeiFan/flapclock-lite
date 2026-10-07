@@ -1,8 +1,9 @@
 <template>
   <div class="classic" :class="rootClass">
     <div class="cl-left">
-      <div class="cl-name">{{ settings.name || '未命名赛事' }}</div>
-      <div class="cl-club">{{ settings.club }}</div>
+      <!-- 站名牌（移植自时刻表版）：搪瓷蓝底、白色内框、四角铆钉；名称长时自动缩小字号 -->
+      <div class="cl-plaque"><span class="zh" :style="plaqueStyle">{{ settings.name || '未命名赛事' }}</span><i></i><i></i><i></i><i></i></div>
+      <div v-if="settings.club" class="cl-club">{{ settings.club }}</div>
     </div>
     <div class="cl-right">
       <div v-show="!brk" class="cl-level"><span class="w">第</span><flap-tile ref="lv0" v-bind="SZ.lv" @land="land" /><flap-tile ref="lv1" class="ml-6" v-bind="SZ.lv" @land="land" /><span class="w">级</span></div>
@@ -43,11 +44,11 @@
       </div>
     </div>
 
-    <!-- 底部一行：下一级、距休息、常驻信息栏 -->
+    <!-- 底部一行（整屏宽）：下一级 | 常驻信息栏（屏幕正中） | 距休息；关闭的统计项只隐藏不让位，信息栏始终居中 -->
     <div class="cl-stats">
-      <div v-if="mod.next" class="st"><span class="k">{{ stats.nxLbl }}</span><span class="v">{{ stats.nx }}</span><span class="u">{{ stats.nxSub }}</span></div>
-      <div v-if="mod.brk" class="st"><span class="k">{{ stats.brkLbl }}</span><span class="v">{{ stats.brk }}</span></div>
+      <div class="st" :class="{ 'is-off': !mod.next }"><span class="k">{{ stats.nxLbl }}</span><span class="v" :style="nxStyle">{{ stats.nx }}</span><span class="u">{{ stats.nxSub }}</span></div>
       <div class="st st-info" :style="infoStyle"><div v-for="(line, i) in infoLines" :key="i" class="ln">{{ line }}</div></div>
+      <div class="st" :class="{ 'is-off': !mod.brk }"><span class="k">{{ stats.brkLbl }}</span><span class="v">{{ stats.brk }}</span></div>
     </div>
     <message-bar v-if="mod.messages" class="cl-bar" :store="messages" :clock="clock" />
   </div>
@@ -60,8 +61,9 @@ import MessageBar from '@/components/MessageBar.vue';
 import { pad2, fmtNum, levelCount, STATE_WORD, STATE_TONE, timeToBreak, clockDigits, hms, textW } from '@shared/clock.mjs';
 
 var NUMS = ['400', '1,500', '5,000', '800', '12,000', '3,000'];
-var ROW_H = 60, VISIBLE = 11;            // 结构表：每行 60px，可见 11 行
-var INFO_W = 660, INFO_H = 88;           // 信息栏可用宽高（px），字号按最长一行自动适配
+var ROW_H = 60, VISIBLE = 9;             // 结构表：每行 60px，可见 9 行（底部整宽信息行占用了原来的位置）
+var INFO_W = 780, INFO_H = 112;          // 信息栏可用宽高（px），字号按最长一行自动适配
+var PLAQUE_TEXT_W = 900;                 // 站名牌内文字最大宽度（px）
 
 export default {
   name: 'ClassicBoard',
@@ -82,10 +84,22 @@ export default {
       var t = 'translate3d(0,' + (-y) + 'px,0)';
       return { WebkitTransform: t, transform: t };
     },
+    /** 站名牌字号：默认 54px，名称太长时缩小，保证牌子不碰到右上角的级别 */
+    plaqueStyle: function () {
+      var w = textW(this.settings.name || '未命名赛事', 1) * 1.1, fs = 54;
+      if (w > 0) fs = Math.max(30, Math.min(54, Math.floor(PLAQUE_TEXT_W / w)));
+      return { fontSize: fs + 'px' };
+    },
+    /** “下一级”的数字较长（如 10,000 / 20,000）时缩小，保证放进 480px 的格子 */
+    nxStyle: function () {
+      var w = textW(this.stats.nx || '', 1) * 0.62, fs = 40;
+      if (w > 0) fs = Math.max(26, Math.min(40, Math.floor(270 / w)));
+      return { fontSize: fs + 'px' };
+    },
     infoLines: function () { return String(this.settings.infoText || '').split('\n').filter(function (l, i, a) { return l || i < a.length - 1; }).slice(0, 3); },
     /** 字号：放得下最长的一行，且所有行放得进格子高度；1 行最大 40px，3 行最大 28px */
     infoStyle: function () {
-      var lines = this.infoLines, n = lines.length || 1, fs = n === 1 ? 40 : n === 2 ? 34 : 28;
+      var lines = this.infoLines, n = lines.length || 1, fs = n === 1 ? 44 : n === 2 ? 40 : 32;
       var widest = lines.reduce(function (w, l) { return Math.max(w, textW(l, 1)); }, 0);
       if (widest > 0) fs = Math.min(fs, Math.floor(INFO_W / widest));
       fs = Math.max(18, Math.min(fs, Math.floor(INFO_H / (n * 1.18))));
@@ -202,7 +216,7 @@ export default {
 .cl-blinds .slash { font-family: $num; font-weight: 800; font-size: 72px; color: $print; margin: 0 16px; }
 .cl-blinds .gap { width: 40px; }
 
-.cl-stats { position: absolute; left: 72px; width: 1280px; top: 806px; height: 96px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center;
+.cl-stats { position: absolute; left: 72px; right: 72px; top: 790px; height: 120px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center;
   border-top: 2px solid $rule; border-bottom: 2px solid $rule; }
 .cl-stats .st { -webkit-flex: 1; flex: 1; height: 100%; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center;
   border-left: 2px solid $rule; white-space: nowrap; }
@@ -220,9 +234,9 @@ export default {
 .cl-stats .st-info .ln { white-space: nowrap; overflow: hidden; color: $white; font-weight: 900; letter-spacing: .04em; }
 
 /* ── 盲注结构表 ── */
-.cl-list { position: absolute; right: 72px; top: 190px; width: 448px; height: 700px; }
+.cl-list { position: absolute; right: 72px; top: 190px; width: 448px; height: 580px; }
 .cl-list-h { height: 40px; line-height: 40px; display: -webkit-flex; display: flex; font-size: 20px; color: $print; letter-spacing: .1em; border-bottom: 2px solid $rule; }
-.cl-list-view { position: relative; height: 660px; overflow: hidden; }
+.cl-list-view { position: relative; height: 540px; overflow: hidden; }
 .cl-list-rows { -webkit-transition: -webkit-transform .6s cubic-bezier(.4, 0, .2, 1); transition: transform .6s cubic-bezier(.4, 0, .2, 1); }
 .cl-row { height: 60px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; border-bottom: 1px solid #161616;
   font-family: $num; font-weight: 800; font-size: 30px; color: $white; }
@@ -239,4 +253,24 @@ export default {
 .cl-row.is-cur { background: $white; color: #050505; border-bottom-color: $white; }
 .cl-row.is-cur .c-brk { color: #050505; }
 .cl-row.is-cur .c-brk em { color: #3A3A38; }
+
+/* ── 站名牌（移植自时刻表版） ── */
+.cl-left { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; max-width: 1400px; }
+.cl-plaque { position: relative; -webkit-flex: none; flex: none; min-width: 500px; height: 112px; padding: 0 44px; border-radius: 10px; background: #1C4E9D;
+  display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center;
+  box-shadow: inset 0 0 0 7px #1C4E9D, inset 0 0 0 9px rgba(255, 255, 255, .6), 0 3px 0 #0E2A57; }
+.cl-plaque .zh { font-family: $hei; font-weight: 900; font-size: 54px; line-height: 1; letter-spacing: .1em; margin-right: -.1em; color: #fff; white-space: nowrap; }
+.cl-plaque i { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .75); }
+.cl-plaque i:nth-of-type(1) { left: 15px; top: 15px; }
+.cl-plaque i:nth-of-type(2) { right: 15px; top: 15px; }
+.cl-plaque i:nth-of-type(3) { left: 15px; bottom: 15px; }
+.cl-plaque i:nth-of-type(4) { right: 15px; bottom: 15px; }
+.cl-left .cl-club { margin: 0 0 0 28px; font-size: 26px; color: $print; letter-spacing: .08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; }
+
+/* ── 底部整宽一行：两侧统计固定宽度，信息栏居中 ── */
+.cl-stats .st:not(.st-info) { -webkit-flex: none; flex: none; width: 480px; overflow: hidden; white-space: nowrap; }
+.cl-stats .st.is-off { visibility: hidden; }
+.cl-stats .st-info { border-left: 2px solid $rule; border-right: 2px solid $rule; -webkit-align-items: center; align-items: center; padding: 0 20px; }
+.cl-stats .st-info .ln { text-align: center; }
+.cl-stats .st:last-child { border-left: 0; }
 </style>

@@ -5,7 +5,7 @@
       <button class="me" @click="openRename">{{ me }} ✎</button>
     </header>
 
-    <div class="rm-wrap">
+    <div class="rm-wrap home-grid">
       <!-- 比赛 -->
       <section class="rm-card">
         <h3>比赛<button class="rm-btn is-sm is-primary" @click="openCreate">新建比赛</button></h3>
@@ -28,14 +28,14 @@
       <!-- 屏幕 -->
       <section class="rm-card">
         <h3>屏幕<small>{{ onlineCount }} 块在线</small></h3>
-        <div v-if="!displays.length" class="rm-empty">电视打开大屏页后会出现在这里。也可以用手机相机扫电视上的二维码，直接绑定。</div>
+        <div v-if="!displays.length" class="rm-empty">电视打开大屏页后会出现在这里。也可以用手机扫电视上的二维码，直接为它选择比赛。</div>
         <div v-for="d in displays" :key="d.id" class="rm-row">
           <div class="main">
-            <i class="rm-dot" :class="{ 'is-on': d.online }"></i> <b>{{ d.name || '未命名屏幕' }}</b>
-            <div class="meta">{{ d.tid ? '显示：' + tourName(d.tid) : '未绑定' }}<template v-if="d.code"> · 配对码 {{ d.code }}</template><template v-if="!d.online"> · 离线</template></div>
+            <i class="rm-dot" :class="{ 'is-on': d.online }"></i> <b>{{ d.name || '未命名屏幕' }}</b><span v-if="d.label" class="scr-no">{{ d.label }}</span>
+            <div class="meta">{{ d.tid ? '显示：' + tourName(d.tid) : '待机' }}<template v-if="!d.online"> · 离线</template></div>
           </div>
           <div class="acts">
-            <button v-if="!d.tid && d.code" class="rm-mini is-primary" @click="openPair(d.code)">绑定</button>
+            <button v-if="!d.tid" class="rm-mini is-primary" :disabled="!d.online" @click="openAssign(d)">选择比赛</button>
             <template v-else>
               <button class="rm-mini" :disabled="!d.online" @click="identify(d)">识别</button>
               <button class="rm-mini" @click="openScreen(d)">设置</button>
@@ -64,10 +64,10 @@
           <div class="rm-acts"><button class="rm-btn" @click="sheet = ''">取消</button><button class="rm-btn is-primary" :disabled="busy || !form.name.trim() || !schemeReady" @click="create">创建</button></div>
         </template>
 
-        <!-- 绑定屏幕 -->
-        <template v-else-if="sheet === 'pair'">
-          <h3>绑定这块屏幕</h3>
-          <label class="f">配对码（电视屏幕上的 6 位数字）</label><input v-model="form.code" type="text" inputmode="numeric" maxlength="6">
+        <!-- 为屏幕选择比赛（扫电视二维码进入，或在屏幕列表里点“选择比赛”） -->
+        <template v-else-if="sheet === 'assign'">
+          <h3>这块屏幕显示哪场比赛？</h3>
+          <p v-if="form.screenLabel">本机编号 {{ form.screenLabel }}（电视待机页上显示的编号）</p>
           <label class="f">显示哪场比赛</label>
           <select v-model="form.tid">
             <option v-for="t in tournaments" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -87,7 +87,7 @@
             </div>
           </template>
           <label class="f">给屏幕起个名字</label><input v-model="form.screen" type="text" maxlength="16" placeholder="例如：大厅左">
-          <div class="rm-acts"><button class="rm-btn" @click="sheet = ''">取消</button><button class="rm-btn is-primary" :disabled="busy || !canPair" @click="pair">绑定</button></div>
+          <div class="rm-acts"><button class="rm-btn" @click="sheet = ''">取消</button><button class="rm-btn is-primary" :disabled="busy || !canAssign" @click="assign">开始显示</button></div>
         </template>
 
         <!-- 屏幕设置 -->
@@ -97,7 +97,7 @@
           <label class="f">显示哪场比赛</label>
           <select v-model="form.tid"><option v-for="t in tournaments" :key="t.id" :value="t.id">{{ t.name }}</option></select>
           <div class="rm-acts"><button class="rm-btn" @click="sheet = ''">取消</button><button class="rm-btn is-primary" :disabled="busy" @click="saveScreen">保存</button></div>
-          <button class="rm-btn is-danger is-wide" :disabled="busy" @click="unpair">解除绑定（屏幕回到配对页）</button>
+          <button class="rm-btn is-danger is-wide" :disabled="busy" @click="unpair">停止显示（屏幕回到待机页）</button>
         </template>
 
         <!-- 确认（删除方案） -->
@@ -124,8 +124,8 @@
 
 <script>
 /*
- * 手机遥控首页：比赛列表、屏幕列表、扫码绑定、本机名称。
- * 电视配对页的二维码指向 /#/?pair=配对码，打开后直接弹出“绑定这块屏幕”。
+ * 手机遥控首页：比赛列表、盲注方案、屏幕列表（为屏幕选择比赛）、本机名称。
+ * 电视待机页的二维码指向 /#/?screen=设备编号，打开后直接弹出“这块屏幕显示哪场比赛？”。
  */
 import api from '@/lib/api';
 import { adminLink, clientName, setClientName } from '@/lib/client';
@@ -141,16 +141,16 @@ export default {
   components: { SchemeEditor: SchemeEditor, SchemeList: SchemeList },
   data: function () {
     return { me: clientName(), loaded: false, tournaments: [], displays: [], schemes: [], sheet: '', busy: false, toast: null, editing: null, confirm: {}, lastSchemeId: '', picking: false,
-      form: { name: '', schemeId: '', code: '', tid: '', screen: '', me: '', displayId: '' } };
+      form: { name: '', schemeId: '', tid: '', screen: '', me: '', displayId: '', screenLabel: '' } };
   },
   computed: {
     onlineCount: function () { return this.displays.filter(function (d) { return d.online; }).length; },
     schemesFull: function () { return this.schemes.length >= MAX_SCHEMES; },
     /** 选中的是一套真正的方案（不是“新建”“推荐”这两个特殊选项） */
     schemeReady: function () { var id = this.form.schemeId; return !!id && id.indexOf('__') !== 0; },
-    canPair: function () {
+    canAssign: function () {
       var f = this.form;
-      return /^\d{6}$/.test(f.code.trim()) && f.tid && (f.tid !== '__new' || (f.name.trim() && this.schemeReady));
+      return !!f.displayId && !!f.tid && (f.tid !== '__new' || (!!f.name.trim() && this.schemeReady));
     }
   },
   created: function () {
@@ -158,10 +158,14 @@ export default {
     this.connect();
     Promise.all([this.loadTournaments(), this.loadSchemes(), api.get('/api/displays').then(function (l) { self.displays = l; })]).then(function () {
       self.loaded = true;
-      var code = String(self.$route.query.pair || ''), msg = String(self.$route.query.msg || '');
-      if (code || msg) self.$router.replace({ path: '/' });
+      var sid = String(self.$route.query.screen || ''), msg = String(self.$route.query.msg || '');
+      if (sid || msg || self.$route.query.pair) self.$router.replace({ path: '/' });
       if (msg) self.showToast(msg, 'go');      // 例如从比赛页删除比赛后带回的结果
-      if (code) self.openPair(code);
+      if (sid) {                               // 扫电视待机页的二维码进入：直接为这块屏幕选择比赛
+        var d = self.displays.find(function (x) { return x.id === sid; });
+        if (d && d.online) self.openAssign(d);
+        else self.showToast('没有找到这块屏幕：请确认电视已打开并联网', 'warn');
+      }
     }).catch(function (e) { self.loaded = true; self.showToast(e.message, 'warn'); });
   },
   beforeDestroy: function () { this.link.close(); clearTimeout(this.toastTimer); },
@@ -171,9 +175,9 @@ export default {
     statusText: function (s) { return STATUS[s] || s; },
     tourName: function (tid) { var t = this.tournaments.find(function (x) { return x.id === tid; }); return t ? t.name : '已删除的比赛'; },
     defaultScheme: function () { return this.schemes.length ? this.schemes[0].id : ''; },
-    /** 加入推荐方案；在新建比赛 / 绑定的弹层里时同时选中它 */
+    /** 加入推荐方案；在新建比赛 / 选择比赛的弹层里时同时选中它 */
     useRecommended: function () {
-      var self = this, inSheet = this.sheet === 'create' || this.sheet === 'pair'; this.busy = true;
+      var self = this, inSheet = this.sheet === 'create' || this.sheet === 'assign'; this.busy = true;
       addRecommendedScheme().then(function (s) {
         self.showToast('已加入推荐方案，可以随时修改', 'go');
         return self.loadSchemes().then(function () { if (inSheet) { self.form.schemeId = s.id; self.lastSchemeId = s.id; } });
@@ -192,7 +196,7 @@ export default {
       if (this.picking) { this.picking = false; this.form.schemeId = this.lastSchemeId; }
     },
     onSchemeSaved: function (s, msg) {
-      var self = this, select = this.picking || (!this.editing.id && (this.sheet === 'create' || this.sheet === 'pair'));
+      var self = this, select = this.picking || (!this.editing.id && (this.sheet === 'create' || this.sheet === 'assign'));
       this.editing = null; this.picking = false; this.showToast(msg || '方案已保存', 'go');
       this.loadSchemes().then(function () { if (select) { self.form.schemeId = s.id; self.lastSchemeId = s.id; } });
     },
@@ -213,19 +217,21 @@ export default {
         .catch(function (e) { self.showToast(e.message, 'warn'); })
         .then(function () { self.busy = false; });
     },
-    openPair: function (code) {
+    /** 为一块屏幕选择比赛：已有比赛，或当场新建一场 */
+    openAssign: function (d) {
       var f = this.form;
-      f.code = String(code || ''); f.tid = this.tournaments.length ? this.tournaments[0].id : '__new';
-      f.name = ''; f.schemeId = this.lastSchemeId = this.defaultScheme(); f.screen = '';
-      this.sheet = 'pair';
+      f.displayId = d.id; f.screenLabel = d.label || ''; f.screen = d.name || '';
+      f.tid = this.tournaments.length ? this.tournaments[0].id : '__new';
+      f.name = ''; f.schemeId = this.lastSchemeId = this.defaultScheme();
+      this.sheet = 'assign';
     },
-    pair: function () {
+    assign: function () {
       var self = this, f = this.form; this.busy = true;
       var ready = f.tid === '__new'
         ? api.post('/api/tournaments', { name: f.name.trim(), schemeId: f.schemeId }).then(function (t) { return t.id; })
         : Promise.resolve(f.tid);
-      ready.then(function (tid) { return api.post('/api/displays/pair', { code: f.code.trim(), tid: tid, name: f.screen.trim() }); })
-        .then(function (d) { self.sheet = ''; self.showToast('已绑定「' + (d.name || '屏幕') + '」', 'go'); self.loadTournaments(); })
+      ready.then(function (tid) { return api.put('/api/displays/' + f.displayId, { tid: tid, name: f.screen.trim() }); })
+        .then(function (d) { self.sheet = ''; self.showToast('「' + (d.name || f.screenLabel || '屏幕') + '」开始显示比赛', 'go'); self.loadTournaments(); })
         .catch(function (e) { self.showToast(e.message, 'warn'); })
         .then(function () { self.busy = false; });
     },
@@ -240,7 +246,7 @@ export default {
     unpair: function () {
       var self = this; this.busy = true;
       api.del('/api/displays/' + this.form.displayId)
-        .then(function () { self.sheet = ''; self.showToast('已解除绑定', 'go'); })
+        .then(function () { self.sheet = ''; self.showToast('已停止显示，屏幕回到待机页', 'go'); })
         .catch(function (e) { self.showToast(e.message, 'warn'); })
         .then(function () { self.busy = false; });
     },
@@ -270,6 +276,13 @@ export default {
 .home .me { height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid $rule; background: transparent; color: $print; font-size: 13px; cursor: pointer; }
 .home .tour { color: $white; text-decoration: none; }
 .home .tour .go { font-size: 22px; color: $print; margin-left: 10px; }
+.home .scr-no { margin-left: 8px; padding: 1px 6px; border: 1px solid $rule; border-radius: 3px; font-family: $num; font-size: 12px; color: $print; letter-spacing: .06em; vertical-align: 1px; }
+/* 宽屏：比赛、盲注方案、屏幕三列 */
+@media (min-width: 1024px) {
+  .rm-wrap.home-grid { max-width: 1320px; display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; }
+  .home-grid > .rm-card { -webkit-flex: 1; flex: 1; min-width: 0; }
+  .home-grid > .rm-card + .rm-card { margin-left: 16px; }
+}
 .home .noscheme p { margin: 0; font-size: 13px; line-height: 1.6; color: $print; }
 .home .noscheme .rm-acts { margin-top: 10px; }
 </style>

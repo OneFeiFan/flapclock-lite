@@ -9,7 +9,7 @@
 页面地址：
 
 - **遥控页（手机）**：`/`
-- **大屏页（电视）**：`/tv/`。安卓外壳只允许加载这个路径，页面内默认进入 `#/display`。
+- **大屏页（电视）**：`/tv/`。安卓外壳只允许加载这个路径，页面内默认进入 `#/display`。没有指定比赛时显示待机页：二维码指向 `/#/?screen=设备编号`，手机打开后直接为这块屏幕选择比赛；页面上同时显示本机编号（设备编号的后 6 位），方便在手机上找到这块屏幕。
 
 ## 访问与操作人
 
@@ -76,6 +76,8 @@
 { version, endMode, levels, schemeId, schemeName }
 ```
 
+`endMode` 是旧字段，已经不再使用：最后一级的时间走完，比赛就自动结束（见下文）。
+
 `schemeId` 为 `null` 表示不跟随任何方案（来源方案被删除了）。
 
 **赛事状态 `state`**：
@@ -85,6 +87,8 @@
 ```
 
 当前级和剩余时间用 `shared/clock.mjs` 的 `advance(state, structure, 服务器时间)` 计算。
+
+**自动结束**：最后一级的时间走完，比赛就结束，不再有超时正计时。`advance` 返回 `ended: true`，剩余时间停在 0；服务端在结束的那一刻自动记一条 `end` 命令（`payload.auto` 为 `true`，操作人为“系统”，日志显示“比赛结束（自动）”）。`endsAt(state, structure)` 返回进行中的比赛预计在哪一刻结束。
 
 ## REST 接口
 
@@ -111,17 +115,16 @@
 | `GET /api/tournaments` | 赛事列表，每项带 `screens`（绑定的屏幕数） |
 | `POST /api/tournaments` `{ name, club?, schemeId? }` | 新建赛事；不指定方案时使用第一套；方案库为空时返回 `invalid`（请先创建一套盲注方案） |
 | `GET /api/tournaments/:id` | 赛事详情，带 `locked` |
-| `DELETE /api/tournaments/:id?moveTo=赛事ID` | 删除赛事。绑定的屏幕改为显示 `moveTo` 指定的赛事；不带 `moveTo` 时回到配对页。返回 `{ ok, moved }` |
+| `DELETE /api/tournaments/:id?moveTo=赛事ID` | 删除赛事。正在显示它的屏幕改为显示 `moveTo` 指定的赛事；不带 `moveTo` 时回到待机页。返回 `{ ok, moved }` |
 | `PUT /api/tournaments/:id/settings` | 修改设置（只传要改的字段） |
 | `PUT /api/tournaments/:id/structure` `{ levels, endMode, baseVersion }` | 直接修改这场比赛的结构，同样受锁定规则约束 |
 | `POST /api/tournaments/:id/scheme` `{ schemeId }` | 把方案用到这场比赛上 |
 | `POST /api/tournaments/:id/commands` `{ cmd }` | 下发命令（和实时通道里的 `cmd` 等价） |
 | `GET /api/tournaments/:id/log` | 最近 300 条操作日志，从新到旧，每条带 `label` 和 `issuer` |
-| `GET /api/displays` | 屏幕列表：在线或已绑定的屏幕；未绑定的屏幕带 `code` |
-| `POST /api/displays/pair` `{ code, tid, name }` | 用配对码绑定屏幕 |
-| `PUT /api/displays/:id` `{ name?, tid? }` | 改名或换绑 |
+| `GET /api/displays` | 屏幕列表：在线的屏幕，以及已指定比赛的离线屏幕。每项为 `{ id, name, label（本机编号）, tid, online }`，`tid` 为空表示待机 |
+| `PUT /api/displays/:id` `{ name?, tid? }` | 改名；`tid` 为某场比赛时让这块屏幕显示它，为 `null` 时停止显示（回到待机页） |
 | `POST /api/displays/:id/identify` | 让这块屏大字显示自己的名字 |
-| `DELETE /api/displays/:id` | 解绑；屏幕回到配对页 |
+| `DELETE /api/displays/:id` | 停止显示，屏幕回到待机页 |
 
 **命令 `cmd`**：
 
@@ -140,7 +143,7 @@
 | 方向 | 消息 | 说明 |
 |---|---|---|
 | 双向 | `ping { c0 }` → `pong { c0, s }` | 对时：客户端发出时的 `performance.now()` 原样带回，`s` 为服务器时间 |
-| 大屏 → | `hello { role: 'display', deviceId, label }` | 未绑定时回 `hello { paired: false, code }`，绑定后回 `hello { paired: true }` + `display { name }` + `snap` + `msgs` |
+| 大屏 → | `hello { role: 'display', deviceId, label }` | 待机时回 `hello { paired: false }`；已指定比赛时回 `hello { paired: true }` + `display { name }` + `snap` + `msgs` |
 | 手机 → | `hello { role: 'admin', name, tid? }` | 回 `hello { name }` + `presence`；带 `tid` 等同于再发一次 `watch` |
 | 手机 → | `watch { tid }` | 查看某场赛事，之后会收到它的 `snap`；赛事不存在时回 `gone` |
 | 手机 → | `cmd { tid, cmd }` | 回 `ack { opId, ok, reason, version, type }` |
@@ -148,5 +151,5 @@
 | → 大屏 | `msg { m: { id, type: 'notice' \| 'loop', from, text, startAt, estW } }` | 走字带上新的一段内容；`msgs { list }` 是加入时正在播放的内容；`retract { id }` 表示撤下某段内容 |
 | → 手机 | `presence { displays }` | 屏幕上线、下线、绑定、改名时推送 |
 | → 手机 | `schemes` / `tournaments` | 方案库或赛事列表有变化，手机重新拉取 |
-| → 大屏 | `paired` / `unpaired { code }` / `identify { name }` / `replaced` | 绑定、解绑、识别；同一设备在别处打开时，旧连接收到 `replaced` |
+| → 大屏 | `paired` / `unpaired` / `identify { name, label }` / `replaced` | 开始显示某场比赛、停止显示（回到待机页）、识别；同一设备在别处打开时，旧连接收到 `replaced` |
 | → | `error { reason }` | `forbidden`：未知角色 |

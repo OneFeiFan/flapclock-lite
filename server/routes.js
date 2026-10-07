@@ -78,7 +78,6 @@ export function registerRoutes(app, ctx) {
 
   /* ── 屏幕 ── */
   app.get('/api/displays', client, function (req, res) { res.json(hub.displayList()); });
-  app.post('/api/displays/pair', client, wrap(function (req, res) { var d = hub.pair(req.body.code, req.body.tid, req.body.name); listChanged(); res.json(d); }));
   app.put('/api/displays/:id', client, wrap(function (req, res) { var d = hub.updateDisplay(req.params.id, req.body || {}); listChanged(); res.json(d); }));
   app.post('/api/displays/:id/identify', client, wrap(function (req, res) { hub.identify(req.params.id); res.json({ ok: true }); }));
   app.delete('/api/displays/:id', client, wrap(function (req, res) { hub.unpair(req.params.id); listChanged(); res.json({ ok: true }); }));

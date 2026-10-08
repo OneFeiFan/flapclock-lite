@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node index.js",
-    "test": "node test/engine.test.js && node test/backend.test.js"
+    "test": "node test/engine.test.js && node test/backend.test.js && node test/voice.test.js"
   },
   "dependencies": {
     "express": "^4.19.2",

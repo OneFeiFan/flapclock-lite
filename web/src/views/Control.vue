@@ -57,6 +57,10 @@
             @use="askApply" @edit="editScheme" @dup="dupScheme" @del="askDelete" @create="newScheme" @recommended="useRecommended" />
         </section>
 
+        <fold-card title="语音播报" :summary="voiceSummary" storage-key="voice">
+          <div class="rm-sub">{{ voiceScreensText }}</div>
+          <label v-for="o in voiceOptions" :key="o.key" class="switch vo"><input type="checkbox" :checked="voiceOn(o.key)" @change="setVoice(o.key, $event.target.checked)"><span>{{ o.label }}</span></label>
+        </fold-card>
         <fold-card title="操作日志" :summary="logSummary" storage-key="log">
           <div v-if="!log.length" class="rm-empty">还没有操作</div>
           <div v-for="e in log" :key="e.seq" class="logrow"><span class="at">{{ e.time }}</span><span class="what">{{ e.label }}</span><span class="who">{{ e.issuer }}</span></div>
@@ -158,6 +162,16 @@ export default {
     infoSummary: function () { var first = String(this.infoBase || '').split('\n')[0]; return first || '未设置'; },
     noticeSummary: function () { return this.loopText ? '循环中：' + this.loopText : '没有循环文字'; },
     logSummary: function () { var e = this.log[0]; return e ? e.time + ' ' + e.label + ' · ' + e.issuer : '还没有操作'; },
+    voiceOptions: function () {
+      return [{ key: 'events', label: '开赛、升级、休息、结束' }, { key: 'levelOneMin', label: '本级还剩一分钟' },
+        { key: 'breakOneMin', label: '休息还剩一分钟' }, { key: 'levelFiveMin', label: '本级还剩五分钟' }];
+    },
+    voiceScreens: function () { var tid = this.tid; return this.displays.filter(function (d) { return d.tid === tid && d.voice; }); },
+    voiceNames: function () { return this.voiceScreens.map(function (d) { return d.name || '未命名屏幕'; }).join('、'); },
+    voiceSummary: function () { return this.voiceScreens.length ? '播报：' + this.voiceNames : '没有屏幕在播报'; },
+    voiceScreensText: function () {
+      return this.voiceScreens.length ? '正在播报的屏幕：' + this.voiceNames : '还没有屏幕播报语音：到首页“屏幕”里，打开某块屏幕的“播报升盲语音”';
+    },
     boundScreens: function () { var tid = this.tid; return this.displays.filter(function (d) { return d.tid === tid; }); },
     jumpRows: function () {
       var cur = this.view.li;
@@ -230,6 +244,8 @@ export default {
     },
     editLoop: function () { this.noticeMode = 'loop'; this.noticeText = this.loopText; },
     stopLoop: function () { this.saveSettings({ marquee: { enabled: false } }, '已停止循环'); },
+    voiceOn: function (key) { var v = this.settings.voice || {}; return key in v ? !!v[key] : key !== 'levelFiveMin'; },
+    setVoice: function (key, on) { var patch = { voice: {} }; patch.voice[key] = on; this.saveSettings(patch, '已保存'); },
     saveSettings: function (patch, okText) {
       var self = this; this.saving = true;
       return api.put('/api/tournaments/' + this.tid + '/settings', patch)
@@ -347,4 +363,5 @@ export default {
     -webkit-align-items: flex-start; align-items: flex-start; -webkit-justify-content: space-between; justify-content: space-between; }
   .ctl-side > .rm-card { width: calc(50% - 8px); }
 }
+.ctl .vo { margin: 10px 0; }
 </style>

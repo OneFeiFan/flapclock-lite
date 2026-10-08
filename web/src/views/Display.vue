@@ -31,6 +31,8 @@ import Link from '@/lib/link';
 import ClockModel from '@/lib/clock';
 import MessageStore from '@/lib/messages';
 import Alerts from '@/lib/alerts';
+import * as voice from '@/lib/voice';
+import { voicePreload } from '@shared/voice.mjs';
 import { keepAwake } from '@/lib/wakelock';
 import { storage, uuid, origin, REDUCED } from '@/lib/util';
 import { themeOf } from '@/themes';
@@ -42,7 +44,7 @@ export default {
   components: { Pairing: Pairing },
   data: function () {
     return { phase: 'boot', settings: {}, linkStatus: 'connecting', scale: 1, ox: 0, oy: 0, shiftN: 0, hint: '',
-      messages: new MessageStore(), deviceId: '', deviceLabel: '', ident: '' };
+      messages: new MessageStore(), deviceId: '', deviceLabel: '', ident: '', screenVoice: false };
   },
   computed: {
     themeComp: function () { return themeOf(this.settings.theme).component; },
@@ -68,7 +70,7 @@ export default {
   mounted: function () {
     var self = this;
     this.connect();
-    this.alerts = new Alerts({ onFlash: function () { self.flash(); } });
+    this.alerts = new Alerts({ onFlash: function () { self.flash(); }, onVoice: function (name) { voice.play(name); } });
     this.fit(); window.addEventListener('resize', this.fit);
     document.addEventListener('keydown', this.onKey);
     this.timers = [
@@ -99,10 +101,11 @@ export default {
       if (m.t === 'hello') { if (m.paired === false) this.phase = 'pair'; }   // 待机：等手机为它选择比赛
       else if (m.t === 'replaced') { this.link.close(); this.phase = 'replaced'; this.clock.snap = null; this.messages.clear(); this.alerts.reset(); }
       else if (m.t === 'paired') { /* 已选择比赛，随后的快照会切到计时画面 */ }
+      else if (m.t === 'display') { this.screenVoice = !!m.voice; this.preloadVoice(); }   // 这块屏幕是否播报语音（手机上的屏幕设置）
       else if (m.t === 'identify') { var self = this; this.ident = m.name; clearTimeout(this.identTimer); this.identTimer = setTimeout(function () { self.ident = ''; }, 6000); }
       else if (m.t === 'snap') {
         if (this.clock.snap && this.clock.snap.tid !== m.tid) { this.messages.clear(); this.alerts.reset(); }
-        if (this.clock.set(m)) { this.settings = m.settings || {}; this.phase = 'board'; }
+        if (this.clock.set(m)) { this.settings = m.settings || {}; this.phase = 'board'; this.preloadVoice(); }
       }
       else if (m.t === 'msg') this.messages.add(m.m);
       else if (m.t === 'msgs') { var ms = this.messages; (m.list || []).forEach(function (x) { ms.add(x); }); }
@@ -112,7 +115,13 @@ export default {
     checkAlerts: function () {
       if (this.phase !== 'board') return;
       var r = this.clock.read(); if (!r) return;
-      this.alerts.update(r, { flash: this.settings.flash !== false && !REDUCED });
+      this.alerts.update(r, { flash: this.settings.flash !== false && !REDUCED, voice: this.screenVoice ? this.settings.voice || null : null });
+    },
+    /** 开了语音的屏幕：提前加载固定句子和当前、之后两个级别的语音，到点直接播放 */
+    preloadVoice: function () {
+      var s = this.clock.snap; if (!this.screenVoice || !s) return;
+      var li = this.clock.read() ? this.clock.read().c.li : 0;
+      voice.preload(voicePreload(s.structure.levels, li));
     },
     flash: function () {
       var el = this.$refs.flash; if (!el) return;

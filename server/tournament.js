@@ -26,6 +26,7 @@ export function sanitizeSettings(input, base) {
   var d = C.DEFAULT_SETTINGS, s = Object.assign({}, d, base || {});
   s.marquee = Object.assign({}, d.marquee, s.marquee);
   s.modules = Object.assign({}, d.modules, s.modules);
+  s.voice = Object.assign({}, d.voice, s.voice);
   var i = input || {};
   if ('name' in i) s.name = str(i.name, 24) || '未命名赛事';
   if ('club' in i) s.club = str(i.club, 24);
@@ -38,8 +39,9 @@ export function sanitizeSettings(input, base) {
     if ('enabled' in i.marquee) s.marquee.enabled = !!i.marquee.enabled;
   }
   if (i.modules) Object.keys(d.modules).forEach(function (k) { if (k in i.modules) s.modules[k] = !!i.modules[k]; });
+  if (i.voice) Object.keys(d.voice).forEach(function (k) { if (k in i.voice) s.voice[k] = !!i.voice[k]; });
   // 只保留现有的设置项（旧数据里已删除的项不再带着走）
-  [[s, d], [s.marquee, d.marquee], [s.modules, d.modules]].forEach(function (pair) {
+  [[s, d], [s.marquee, d.marquee], [s.modules, d.modules], [s.voice, d.voice]].forEach(function (pair) {
     Object.keys(pair[0]).forEach(function (k) { if (!(k in pair[1])) delete pair[0][k]; });
   });
   return s;
@@ -210,6 +212,7 @@ export class Tournament {
     var other = ['name', 'club', 'theme', 'numberFormat', 'flash'].some(function (k) { return after[k] !== before[k]; }) ||
       JSON.stringify(after.modules) !== JSON.stringify(before.modules);
     if (other) what.push('修改赛事设置');
+    if (JSON.stringify(after.voice) !== JSON.stringify(before.voice)) what.push('修改语音播报');
     this.settings = after;
     if (what.length) this.logMeta('settings', { what: what.join('、') }, issuer);
     this.changed();

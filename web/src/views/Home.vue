@@ -32,7 +32,7 @@
         <div v-for="d in displays" :key="d.id" class="rm-row">
           <div class="main">
             <i class="rm-dot" :class="{ 'is-on': d.online }"></i> <b>{{ d.name || '未命名屏幕' }}</b><span v-if="d.label" class="scr-no">{{ d.label }}</span>
-            <div class="meta">{{ d.tid ? '显示：' + tourName(d.tid) : '待机' }}<template v-if="!d.online"> · 离线</template></div>
+            <div class="meta">{{ d.tid ? '显示：' + tourName(d.tid) : '待机' }}<template v-if="d.voice"> · 播报语音</template><template v-if="!d.online"> · 离线</template></div>
           </div>
           <div class="acts">
             <button v-if="!d.tid" class="rm-mini is-primary" :disabled="!d.online" @click="openAssign(d)">选择比赛</button>
@@ -96,6 +96,8 @@
           <label class="f">名称</label><input v-model="form.screen" type="text" maxlength="16">
           <label class="f">显示哪场比赛</label>
           <select v-model="form.tid"><option v-for="t in tournaments" :key="t.id" :value="t.id">{{ t.name }}</option></select>
+          <label class="voice-opt"><input v-model="form.voice" type="checkbox"> 这块屏幕播报升盲语音</label>
+          <p class="voice-tip">同一个场地建议只开一块，几块屏一起念会有回声。播报哪些内容在比赛页的“语音播报”里设置。</p>
           <div class="rm-acts"><button class="rm-btn" @click="sheet = ''">取消</button><button class="rm-btn is-primary" :disabled="busy" @click="saveScreen">保存</button></div>
           <button class="rm-btn is-danger is-wide" :disabled="busy" @click="unpair">停止显示（屏幕回到待机页）</button>
         </template>
@@ -141,7 +143,7 @@ export default {
   components: { SchemeEditor: SchemeEditor, SchemeList: SchemeList },
   data: function () {
     return { me: clientName(), loaded: false, tournaments: [], displays: [], schemes: [], sheet: '', busy: false, toast: null, editing: null, confirm: {}, lastSchemeId: '', picking: false,
-      form: { name: '', schemeId: '', tid: '', screen: '', me: '', displayId: '', screenLabel: '' } };
+      form: { name: '', schemeId: '', tid: '', screen: '', me: '', displayId: '', screenLabel: '', voice: false } };
   },
   computed: {
     onlineCount: function () { return this.displays.filter(function (d) { return d.online; }).length; },
@@ -235,10 +237,10 @@ export default {
         .catch(function (e) { self.showToast(e.message, 'warn'); })
         .then(function () { self.busy = false; });
     },
-    openScreen: function (d) { this.form.displayId = d.id; this.form.screen = d.name || ''; this.form.tid = d.tid || (this.tournaments[0] && this.tournaments[0].id) || ''; this.sheet = 'screen'; },
+    openScreen: function (d) { this.form.displayId = d.id; this.form.voice = !!d.voice; this.form.screen = d.name || ''; this.form.tid = d.tid || (this.tournaments[0] && this.tournaments[0].id) || ''; this.sheet = 'screen'; },
     saveScreen: function () {
       var self = this; this.busy = true;
-      api.put('/api/displays/' + this.form.displayId, { name: this.form.screen.trim(), tid: this.form.tid })
+      api.put('/api/displays/' + this.form.displayId, { name: this.form.screen.trim(), tid: this.form.tid, voice: this.form.voice })
         .then(function () { self.sheet = ''; self.showToast('已保存', 'go'); })
         .catch(function (e) { self.showToast(e.message, 'warn'); })
         .then(function () { self.busy = false; });
@@ -285,4 +287,7 @@ export default {
 }
 .home .noscheme p { margin: 0; font-size: 13px; line-height: 1.6; color: $print; }
 .home .noscheme .rm-acts { margin-top: 10px; }
+.home .voice-opt { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-top: 14px; font-size: 15px; }
+.home .voice-opt input { width: 18px; height: 18px; margin: 0 8px 0 0; }
+.home .voice-tip { margin: 6px 0 0; font-size: 12px; color: #8F8F8A; line-height: 1.6; }
 </style>

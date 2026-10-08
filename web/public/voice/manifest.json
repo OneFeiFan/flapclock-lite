@@ -1,0 +1,347 @@
+{
+ "voice": "CosyVoice2-0.5B（参考录音：prompt/prompt.wav）",
+ "items": {
+  "start": {
+   "text": "比赛开始。",
+   "when": "比赛开始时",
+   "file": "voice/start.mp3",
+   "ms": 1858
+  },
+  "level-01": {
+   "text": "第一级开始。",
+   "when": "进入第 1 级时",
+   "file": "voice/level-01.mp3",
+   "ms": 1756
+  },
+  "level-02": {
+   "text": "第二级开始。",
+   "when": "进入第 2 级时",
+   "file": "voice/level-02.mp3",
+   "ms": 1732
+  },
+  "level-03": {
+   "text": "第三级开始。",
+   "when": "进入第 3 级时",
+   "file": "voice/level-03.mp3",
+   "ms": 1955
+  },
+  "level-04": {
+   "text": "第四级开始。",
+   "when": "进入第 4 级时",
+   "file": "voice/level-04.mp3",
+   "ms": 1800
+  },
+  "level-05": {
+   "text": "第五级开始。",
+   "when": "进入第 5 级时",
+   "file": "voice/level-05.mp3",
+   "ms": 2060
+  },
+  "level-06": {
+   "text": "第六级开始。",
+   "when": "进入第 6 级时",
+   "file": "voice/level-06.mp3",
+   "ms": 2033
+  },
+  "level-07": {
+   "text": "第七级开始。",
+   "when": "进入第 7 级时",
+   "file": "voice/level-07.mp3",
+   "ms": 1961
+  },
+  "level-08": {
+   "text": "第八级开始。",
+   "when": "进入第 8 级时",
+   "file": "voice/level-08.mp3",
+   "ms": 2119
+  },
+  "level-09": {
+   "text": "第九级开始。",
+   "when": "进入第 9 级时",
+   "file": "voice/level-09.mp3",
+   "ms": 2092
+  },
+  "level-10": {
+   "text": "第十级开始。",
+   "when": "进入第 10 级时",
+   "file": "voice/level-10.mp3",
+   "ms": 1900
+  },
+  "level-11": {
+   "text": "第十一级开始。",
+   "when": "进入第 11 级时",
+   "file": "voice/level-11.mp3",
+   "ms": 2292
+  },
+  "level-12": {
+   "text": "第十二级开始。",
+   "when": "进入第 12 级时",
+   "file": "voice/level-12.mp3",
+   "ms": 2258
+  },
+  "level-13": {
+   "text": "第十三级开始。",
+   "when": "进入第 13 级时",
+   "file": "voice/level-13.mp3",
+   "ms": 2480
+  },
+  "level-14": {
+   "text": "第十四级开始。",
+   "when": "进入第 14 级时",
+   "file": "voice/level-14.mp3",
+   "ms": 2416
+  },
+  "level-15": {
+   "text": "第十五级开始。",
+   "when": "进入第 15 级时",
+   "file": "voice/level-15.mp3",
+   "ms": 2906
+  },
+  "level-16": {
+   "text": "第十六级开始。",
+   "when": "进入第 16 级时",
+   "file": "voice/level-16.mp3",
+   "ms": 1914
+  },
+  "level-17": {
+   "text": "第十七级开始。",
+   "when": "进入第 17 级时",
+   "file": "voice/level-17.mp3",
+   "ms": 2364
+  },
+  "level-18": {
+   "text": "第十八级开始。",
+   "when": "进入第 18 级时",
+   "file": "voice/level-18.mp3",
+   "ms": 2309
+  },
+  "level-19": {
+   "text": "第十九级开始。",
+   "when": "进入第 19 级时",
+   "file": "voice/level-19.mp3",
+   "ms": 2236
+  },
+  "level-20": {
+   "text": "第二十级开始。",
+   "when": "进入第 20 级时",
+   "file": "voice/level-20.mp3",
+   "ms": 2309
+  },
+  "level-21": {
+   "text": "第二十一级开始。",
+   "when": "进入第 21 级时",
+   "file": "voice/level-21.mp3",
+   "ms": 2320
+  },
+  "level-22": {
+   "text": "第二十二级开始。",
+   "when": "进入第 22 级时",
+   "file": "voice/level-22.mp3",
+   "ms": 4612
+  },
+  "level-23": {
+   "text": "第二十三级开始。",
+   "when": "进入第 23 级时",
+   "file": "voice/level-23.mp3",
+   "ms": 2139
+  },
+  "level-24": {
+   "text": "第二十四级开始。",
+   "when": "进入第 24 级时",
+   "file": "voice/level-24.mp3",
+   "ms": 2346
+  },
+  "level-25": {
+   "text": "第二十五级开始。",
+   "when": "进入第 25 级时",
+   "file": "voice/level-25.mp3",
+   "ms": 2465
+  },
+  "level-26": {
+   "text": "第二十六级开始。",
+   "when": "进入第 26 级时",
+   "file": "voice/level-26.mp3",
+   "ms": 2453
+  },
+  "level-27": {
+   "text": "第二十七级开始。",
+   "when": "进入第 27 级时",
+   "file": "voice/level-27.mp3",
+   "ms": 2531
+  },
+  "level-28": {
+   "text": "第二十八级开始。",
+   "when": "进入第 28 级时",
+   "file": "voice/level-28.mp3",
+   "ms": 2684
+  },
+  "level-29": {
+   "text": "第二十九级开始。",
+   "when": "进入第 29 级时",
+   "file": "voice/level-29.mp3",
+   "ms": 2240
+  },
+  "level-30": {
+   "text": "第三十级开始。",
+   "when": "进入第 30 级时",
+   "file": "voice/level-30.mp3",
+   "ms": 4400
+  },
+  "level-31": {
+   "text": "第三十一级开始。",
+   "when": "进入第 31 级时",
+   "file": "voice/level-31.mp3",
+   "ms": 3008
+  },
+  "level-32": {
+   "text": "第三十二级开始。",
+   "when": "进入第 32 级时",
+   "file": "voice/level-32.mp3",
+   "ms": 2980
+  },
+  "level-33": {
+   "text": "第三十三级开始。",
+   "when": "进入第 33 级时",
+   "file": "voice/level-33.mp3",
+   "ms": 2583
+  },
+  "level-34": {
+   "text": "第三十四级开始。",
+   "when": "进入第 34 级时",
+   "file": "voice/level-34.mp3",
+   "ms": 2601
+  },
+  "level-35": {
+   "text": "第三十五级开始。",
+   "when": "进入第 35 级时",
+   "file": "voice/level-35.mp3",
+   "ms": 2822
+  },
+  "level-36": {
+   "text": "第三十六级开始。",
+   "when": "进入第 36 级时",
+   "file": "voice/level-36.mp3",
+   "ms": 2630
+  },
+  "level-37": {
+   "text": "第三十七级开始。",
+   "when": "进入第 37 级时",
+   "file": "voice/level-37.mp3",
+   "ms": 2434
+  },
+  "level-38": {
+   "text": "第三十八级开始。",
+   "when": "进入第 38 级时",
+   "file": "voice/level-38.mp3",
+   "ms": 2637
+  },
+  "level-39": {
+   "text": "第三十九级开始。",
+   "when": "进入第 39 级时",
+   "file": "voice/level-39.mp3",
+   "ms": 2867
+  },
+  "level-40": {
+   "text": "第四十级开始。",
+   "when": "进入第 40 级时",
+   "file": "voice/level-40.mp3",
+   "ms": 1998
+  },
+  "level-41": {
+   "text": "第四十一级开始。",
+   "when": "进入第 41 级时",
+   "file": "voice/level-41.mp3",
+   "ms": 2873
+  },
+  "level-42": {
+   "text": "第四十二级开始。",
+   "when": "进入第 42 级时",
+   "file": "voice/level-42.mp3",
+   "ms": 2561
+  },
+  "level-43": {
+   "text": "第四十三级开始。",
+   "when": "进入第 43 级时",
+   "file": "voice/level-43.mp3",
+   "ms": 2972
+  },
+  "level-44": {
+   "text": "第四十四级开始。",
+   "when": "进入第 44 级时",
+   "file": "voice/level-44.mp3",
+   "ms": 2372
+  },
+  "level-45": {
+   "text": "第四十五级开始。",
+   "when": "进入第 45 级时",
+   "file": "voice/level-45.mp3",
+   "ms": 2859
+  },
+  "level-46": {
+   "text": "第四十六级开始。",
+   "when": "进入第 46 级时",
+   "file": "voice/level-46.mp3",
+   "ms": 2727
+  },
+  "level-47": {
+   "text": "第四十七级开始。",
+   "when": "进入第 47 级时",
+   "file": "voice/level-47.mp3",
+   "ms": 2609
+  },
+  "level-48": {
+   "text": "第四十八级开始。",
+   "when": "进入第 48 级时",
+   "file": "voice/level-48.mp3",
+   "ms": 2420
+  },
+  "level-49": {
+   "text": "第四十九级开始。",
+   "when": "进入第 49 级时",
+   "file": "voice/level-49.mp3",
+   "ms": 2430
+  },
+  "level-50": {
+   "text": "第五十级开始。",
+   "when": "进入第 50 级时",
+   "file": "voice/level-50.mp3",
+   "ms": 2604
+  },
+  "break": {
+   "text": "休息开始。",
+   "when": "进入休息时（不念时长，时长看大屏）",
+   "file": "voice/break.mp3",
+   "ms": 1502
+  },
+  "regend": {
+   "text": "截止买入，开始休息。",
+   "when": "进入截止买入休息时",
+   "file": "voice/regend.mp3",
+   "ms": 2347
+  },
+  "level-1min": {
+   "text": "本级还剩一分钟。",
+   "when": "每级最后一分钟",
+   "file": "voice/level-1min.mp3",
+   "ms": 2315
+  },
+  "break-1min": {
+   "text": "休息还剩一分钟，请回到座位。",
+   "when": "休息最后一分钟",
+   "file": "voice/break-1min.mp3",
+   "ms": 3103
+  },
+  "level-5min": {
+   "text": "本级还剩五分钟。",
+   "when": "每级最后五分钟（默认不播报，先备着）",
+   "file": "voice/level-5min.mp3",
+   "ms": 2221
+  },
+  "end": {
+   "text": "比赛结束。",
+   "when": "比赛结束时（手动结束或到点自动结束）",
+   "file": "voice/end.mp3",
+   "ms": 1413
+  }
+ }
+}

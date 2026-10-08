@@ -11,7 +11,8 @@ export var DEFAULT_SETTINGS = {
   name: '新赛事', club: '', theme: 'classic', numberFormat: 'comma', flash: true,
   infoText: '',                                                   // 常驻信息栏，最多 3 行
   marquee: { text: '', enabled: false },                          // 走字灯的常驻循环文字（一次性公告用 notice 命令）
-  modules: { next: true, brk: true }
+  modules: { next: true, brk: true },
+  voice: { events: true, levelOneMin: true, breakOneMin: true, levelFiveMin: false }   // 语音播报的内容；哪块屏幕播报在屏幕设置里选
 };
 
 export function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }

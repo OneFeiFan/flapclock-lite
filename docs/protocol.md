@@ -153,3 +153,10 @@
 | → 手机 | `schemes` / `tournaments` | 方案库或赛事列表有变化，手机重新拉取 |
 | → 大屏 | `paired` / `unpaired` / `identify { name, label }` / `replaced` | 开始显示某场比赛、停止显示（回到待机页）、识别；同一设备在别处打开时，旧连接收到 `replaced` |
 | → | `error { reason }` | `forbidden`：未知角色 |
+
+## 升盲语音播报
+
+- **语音包**：`web/public/voice/*.mp3`（网址 `/voice/文件名.mp3`），文件名与播放时机见同目录的 `manifest.json`。由 voicepack-gen 生成（CosyVoice2，Apache 2.0）；更换语音包只需覆盖这些文件，代码不用改。
+- **哪块屏幕播报**：屏幕记录增加 `voice`（布尔，默认 `false`）。`PUT /api/displays/:id` 可以传 `{ voice }`；`GET /api/displays` 和推送的 `presence` 里每块屏幕都带 `voice`；下发给大屏的 `display { name, voice }` 也带上它。同一场地建议只开一块。
+- **播报哪些内容**：赛事设置增加 `voice: { events, levelOneMin, breakOneMin, levelFiveMin }`。`events` 是开赛、升级、休息、截止买入休息、比赛结束；默认除 `levelFiveMin` 外都开启。修改后日志记为“修改语音播报”。
+- **规则**（`shared/voice.mjs`，前后端共用，测试见 `server/test/voice.test.js`）：比较前后两帧的计时状态，只在变化真正发生的那一刻播报。屏幕刚打开或重连、两帧相隔超过 2 秒（休眠后醒来）、换了比赛、暂停中，都不播报；手动把剩余时间设到 1 分钟以内也不算“还剩一分钟”。

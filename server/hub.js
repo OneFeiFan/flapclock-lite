@@ -90,7 +90,7 @@ export class Hub {
     if (t) {
       this.join(ws, t.id);
       send(ws, { t: 'hello', serverMs: Date.now(), paired: true });
-      send(ws, { t: 'display', name: d.name });
+      send(ws, { t: 'display', name: d.name, voice: !!d.voice });
       send(ws, t.snapshot()); send(ws, { t: 'msgs', list: t.activeMessages(Date.now()) });
     } else {
       send(ws, { t: 'hello', serverMs: Date.now(), paired: false });   // 待机：等手机为它选择比赛
@@ -121,7 +121,7 @@ export class Hub {
   notifyAdmins(obj) { var data = JSON.stringify(obj); this.admins.forEach((ws) => { if (ws.readyState === 1) ws.send(data); }); }
 
   displayList() {
-    return Array.from(this.store.displays.values()).map((d) => ({ id: d.id, name: d.name, label: d.label || '', tid: d.tid,
+    return Array.from(this.store.displays.values()).map((d) => ({ id: d.id, name: d.name, label: d.label || '', tid: d.tid, voice: !!d.voice,
       online: this.displaySockets.has(d.id), createdAt: d.createdAt }))
       .filter((d) => d.tid || d.online)
       .sort((a, b) => b.createdAt - a.createdAt);
@@ -133,6 +133,7 @@ export class Hub {
   updateDisplay(id, patch) {
     var d = this.store.displays.get(id); if (!d) throw new Error('屏幕不存在');
     if ('name' in patch) d.name = String(patch.name || '').trim().slice(0, 16);
+    if ('voice' in patch) d.voice = !!patch.voice;      // 这块屏幕是否播报语音（同一场地建议只开一块）
     if ('tid' in patch && patch.tid === null && d.tid) { this.store.saveDisplays(); this.unpair(id); return d; }
     if ('tid' in patch && patch.tid && patch.tid !== d.tid) {
       var t = this.store.tournaments.get(patch.tid); if (!t) throw new Error('比赛不存在');
@@ -142,11 +143,11 @@ export class Hub {
       if (ws0) {
         this.join(ws0, t.id);
         if (wasIdle) send(ws0, { t: 'paired', tid: t.id });
-        send(ws0, { t: 'display', name: d.name }); send(ws0, t.snapshot()); send(ws0, { t: 'msgs', list: t.activeMessages(Date.now()) });
+        send(ws0, { t: 'display', name: d.name, voice: !!d.voice }); send(ws0, t.snapshot()); send(ws0, { t: 'msgs', list: t.activeMessages(Date.now()) });
       }
     }
     this.store.saveDisplays();
-    var ws = this.displaySockets.get(d.id); if (ws) send(ws, { t: 'display', name: d.name });
+    var ws = this.displaySockets.get(d.id); if (ws) send(ws, { t: 'display', name: d.name, voice: !!d.voice });
     this.presence();
     return d;
   }

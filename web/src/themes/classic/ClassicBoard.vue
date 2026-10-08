@@ -62,7 +62,7 @@ import { pad2, fmtNum, levelCount, STATE_WORD, STATE_TONE, timeToBreak, clockDig
 
 var NUMS = ['400', '1,500', '5,000', '800', '12,000', '3,000'];
 var ROW_H = 60, VISIBLE = 9;             // 结构表：每行 60px，可见 9 行（底部整宽信息行占用了原来的位置）
-var INFO_W = 780, INFO_H = 112;          // 信息栏可用宽高（px），字号按最长一行自动适配
+var INFO_W = 780, INFO_H = 108;          // 信息栏可用宽高（px），字号按最长一行自动适配
 var PLAQUE_TEXT_W = 900;                 // 站名牌内文字最大宽度（px）
 
 export default {
@@ -194,8 +194,8 @@ export default {
 .cl-bh .v { font-size: 46px; }
 .cl-sub { margin-top: 14px; font-size: 22px; color: $print; }
 
-/* 主计时区放在左侧 1280px 内居中，右侧留给盲注结构表 */
-.cl-hero { position: absolute; left: 72px; width: 1280px; top: 178px; text-align: center; }
+/* 主计时区放在左侧 1280px 内居中，右侧留给盲注结构表；顶部 166px，让盲注翻片与底部统计行之间留出 10px */
+.cl-hero { position: absolute; left: 72px; width: 1280px; top: 166px; text-align: center; }
 .cl-state { height: 50px; line-height: 50px; font-size: 46px; letter-spacing: .12em; transition: color .3s; }
 .cl-state.is-go { color: $go; } .cl-state.is-warn { color: $warn; } .cl-state.is-stop { color: $stop; } .cl-state.is-white { color: $white; }
 .cl-clock { margin-top: 20px; display: -webkit-flex; display: flex; -webkit-justify-content: center; justify-content: center; -webkit-align-items: center; align-items: center; transition: opacity .4s; }
@@ -216,7 +216,7 @@ export default {
 .cl-blinds .slash { font-family: $num; font-weight: 800; font-size: 72px; color: $print; margin: 0 16px; }
 .cl-blinds .gap { width: 40px; }
 
-.cl-stats { position: absolute; left: 72px; right: 72px; top: 790px; height: 120px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center;
+.cl-stats { position: absolute; left: 72px; right: 72px; top: 794px; height: 116px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center;
   border-top: 2px solid $rule; border-bottom: 2px solid $rule; }
 .cl-stats .st { -webkit-flex: 1; flex: 1; height: 100%; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center;
   border-left: 2px solid $rule; white-space: nowrap; }

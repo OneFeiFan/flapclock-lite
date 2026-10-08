@@ -87,6 +87,8 @@
             </div>
           </template>
           <label class="f">给屏幕起个名字</label><input v-model="form.screen" type="text" maxlength="16" placeholder="例如：大厅左">
+          <label class="voice-opt"><input v-model="form.voice" type="checkbox" @change="form.voiceTouched = true"> 这块屏幕播报升盲语音</label>
+          <p class="voice-tip">{{ assignVoiceTip }}</p>
           <div class="rm-acts"><button class="rm-btn" @click="sheet = ''">取消</button><button class="rm-btn is-primary" :disabled="busy || !canAssign" @click="assign">开始显示</button></div>
         </template>
 
@@ -143,10 +145,23 @@ export default {
   components: { SchemeEditor: SchemeEditor, SchemeList: SchemeList },
   data: function () {
     return { me: clientName(), loaded: false, tournaments: [], displays: [], schemes: [], sheet: '', busy: false, toast: null, editing: null, confirm: {}, lastSchemeId: '', picking: false,
-      form: { name: '', schemeId: '', tid: '', screen: '', me: '', displayId: '', screenLabel: '', voice: false } };
+      form: { name: '', schemeId: '', tid: '', screen: '', me: '', displayId: '', screenLabel: '', voice: false, voiceTouched: false } };
+  },
+  watch: {
+    /** 选择比赛的弹层里切换比赛时，如果没手动改过播报开关，就按“这场比赛有没有屏幕在播报”重新决定默认值 */
+    'form.tid': function (tid) { if (this.sheet === 'assign' && !this.form.voiceTouched) this.form.voice = !this.voiceScreensOf(tid).length; }
   },
   computed: {
     onlineCount: function () { return this.displays.filter(function (d) { return d.online; }).length; },
+    /** 选择比赛时的语音提示：这场比赛已有屏幕在播报时说明是哪块 */
+    assignVoiceTip: function () {
+      var others = this.voiceScreensOf(this.form.tid);
+      if (others.length) {
+        var t = this.tournaments.find(function (x) { return x.id === this.form.tid; }, this);
+        return '「' + (t ? t.name : '这场比赛') + '」已经有屏幕在播报（' + others.map(function (d) { return d.name || '未命名屏幕'; }).join('、') + '），一般不需要再开，几块屏一起念会有回声。';
+      }
+      return '这场比赛还没有屏幕在播报，默认由这块屏幕来念。播报哪些内容在比赛页的“语音播报”里设置。';
+    },
     schemesFull: function () { return this.schemes.length >= MAX_SCHEMES; },
     /** 选中的是一套真正的方案（不是“新建”“推荐”这两个特殊选项） */
     schemeReady: function () { var id = this.form.schemeId; return !!id && id.indexOf('__') !== 0; },
@@ -225,14 +240,20 @@ export default {
       f.displayId = d.id; f.screenLabel = d.label || ''; f.screen = d.name || '';
       f.tid = this.tournaments.length ? this.tournaments[0].id : '__new';
       f.name = ''; f.schemeId = this.lastSchemeId = this.defaultScheme();
+      f.voiceTouched = false; f.voice = !this.voiceScreensOf(f.tid).length;
       this.sheet = 'assign';
+    },
+    /** 某场比赛里已经在播报语音的其他屏幕（新建的比赛还没有屏幕） */
+    voiceScreensOf: function (tid) {
+      var self = this;
+      return tid && tid !== '__new' ? this.displays.filter(function (d) { return d.tid === tid && d.voice && d.id !== self.form.displayId; }) : [];
     },
     assign: function () {
       var self = this, f = this.form; this.busy = true;
       var ready = f.tid === '__new'
         ? api.post('/api/tournaments', { name: f.name.trim(), schemeId: f.schemeId }).then(function (t) { return t.id; })
         : Promise.resolve(f.tid);
-      ready.then(function (tid) { return api.put('/api/displays/' + f.displayId, { tid: tid, name: f.screen.trim() }); })
+      ready.then(function (tid) { return api.put('/api/displays/' + f.displayId, { tid: tid, name: f.screen.trim(), voice: f.voice }); })
         .then(function (d) { self.sheet = ''; self.showToast('「' + (d.name || f.screenLabel || '屏幕') + '」开始显示比赛', 'go'); self.loadTournaments(); })
         .catch(function (e) { self.showToast(e.message, 'warn'); })
         .then(function () { self.busy = false; });
